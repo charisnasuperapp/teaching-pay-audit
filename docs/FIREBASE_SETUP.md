@@ -1,6 +1,6 @@
-# Firebase Setup
+# Firebase Setup — MySalary
 
-Teaching Pay Audit uses Firebase Authentication and Cloud Firestore through REST APIs and is compatible with the Firebase Spark plan within its free quotas.
+MySalary uses Firebase Authentication and Cloud Firestore through REST APIs and remains compatible with the Firebase Spark plan within its free quotas.
 
 ## 1. Authentication
 
@@ -12,7 +12,28 @@ Authentication → Sign-in method → Email/Password
 
 Anonymous authentication, Phone Authentication, Cloud Functions, and Firebase Hosting are not required.
 
-## 2. Firestore
+## 2. Authentication branding
+
+Set the public-facing name to:
+
+```text
+MySalary
+```
+
+Then configure the built-in authentication email templates using:
+
+```text
+docs/FIREBASE_EMAIL_TEMPLATES.md
+```
+
+For the current production domain, Authorized domains should include:
+
+```text
+mysalary.my.id
+www.mysalary.my.id
+```
+
+## 3. Firestore
 
 Create the default Cloud Firestore database in Production mode and publish:
 
@@ -22,7 +43,7 @@ firebase/firestore.rules
 
 Do not manually create collections. Documents are created after users register and save data.
 
-## 3. Web App
+## 4. Web App
 
 Register one Firebase Web App and obtain:
 
@@ -38,7 +59,7 @@ VITE_FIREBASE_API_KEY
 VITE_FIREBASE_PROJECT_ID
 ```
 
-## 4. Data isolation
+## 5. Data isolation
 
 Each account uses its Firebase UID:
 
@@ -50,7 +71,7 @@ users/{uid}/salaryAuditMonths/{YYYY-MM}
 
 The supplied security rules only permit the signed-in user to read/write their own UID path.
 
-## 5. Profile
+## 6. Profile
 
 The profile document contains:
 
@@ -63,4 +84,4 @@ The profile document contains:
 }
 ```
 
-The display name is used to personalize the app and reports.
+The display name personalizes the MySalary dashboard, reports, exports, and profile UI.

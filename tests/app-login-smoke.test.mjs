@@ -58,7 +58,7 @@ test('the dashboard remains protected until sign-in and the English sign-in scre
   await import(`../src/app.js?smoke=${Date.now()}`);
 
   assert.match(root.innerHTML, /Welcome back/);
-  assert.match(root.innerHTML, /Teaching Pay Audit/);
+  assert.match(root.innerHTML, /MySalary/);
   assert.match(root.innerHTML, /Professional reports/);
   assert.match(root.innerHTML, /Automatic cloud sync/);
   assert.match(root.innerHTML, /Create account/);

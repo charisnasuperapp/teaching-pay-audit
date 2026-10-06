@@ -1,6 +1,6 @@
 # Authentication API
 
-Teaching Pay Audit uses Firebase Identity Toolkit REST endpoints for Email/Password authentication.
+MySalary uses Firebase Identity Toolkit REST endpoints for Email/Password authentication.
 
 ## Supported workflows
 

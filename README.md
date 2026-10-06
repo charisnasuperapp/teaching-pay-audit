@@ -1,45 +1,49 @@
-# Teaching Pay Audit v2.2.0
+# MySalary v2.3.0 — Teaching Pay Audit
 
-Teaching Pay Audit is a multi-user, offline-first web application for teachers, tutors, and hourly instructors to record teaching activity, calculate pay, synchronize private account data across devices, and export polished business-ready reports.
+MySalary is a multi-user, offline-first teaching-hours and pay workspace for teachers, tutors, and hourly instructors. It records teaching activity, calculates earnings automatically, synchronizes private account data across devices, and exports polished reports.
 
 ## Core features
 
 - Public Email/Password sign-up and sign-in
-- Required display name for personalized reports
+- Required display name for personalized dashboards and reports
 - In-app password change with current-password verification
 - Password reset by email
 - Persistent browser session
 - Safe sign-out with local save, cloud upload, and revision verification
 - Per-user Firestore isolation by Firebase UID
 - Offline-first local storage
-- Automatic Firebase synchronization
+- Fast automatic Firebase synchronization
 - Monthly teaching hours and pay calculations
 - Annual pay summary
 - Multiline Class and Notes fields
 - Direct professional PDF download
 - Share-ready PNG report download
 - Professional Excel `.xlsx` workbooks with Summary, Details, Analytics, formulas, formatting, and an embedded activity chart
-- Clean UTF-8 CSV export for interoperability
+- Clean UTF-8 CSV export
 - JSON backup/restore
 - Responsive Android phone, Android tablet, desktop, and web UI
 - PWA installation
 - Firebase Spark-compatible architecture
 - Vercel static deployment
 
-## v2.2.0 reporting upgrade
+## v2.3.0 brand & authentication polish
 
-This release rebuilds the reporting/export layer for commercial use:
+- Public-facing product brand is now **MySalary** with **Teaching Pay Audit** as the functional descriptor.
+- The supplied brand mark replaces generic money icons in the landing page, loading state, mobile auth header, and signed-in app header.
+- A subtle translucent brand watermark is integrated into the desktop landing hero without reducing headline readability.
+- PWA icons now use the supplied brand mark on the product gradient.
+- Password-reset messaging is privacy-safe: the UI no longer confirms whether an email address exists.
+- Login, registration, and recovery copy is polished for an international commercial audience.
+- Runtime UI contains no personal developer-name attribution.
+- Firebase email-template copy is documented in `docs/FIREBASE_EMAIL_TEMPLATES.md`.
 
-- PDF spacing and hierarchy were redesigned to prevent title and metadata overlap.
-- Monthly PDF metadata now uses a readable 2x2 information grid.
-- The supplied brand mark is embedded as a very light watermark behind PDF content.
-- PNG reports can be downloaded directly for messaging and quick sharing.
-- Excel export now creates a real `.xlsx` workbook instead of relying on CSV formatting.
-- Monthly Excel exports contain `Summary`, `Daily Details`, and `Analytics` sheets.
-- Annual Excel exports contain `Summary`, `Monthly Breakdown`, and `Analytics` sheets.
-- Workbook totals use formulas and the Analytics sheet includes a generated chart image.
-- CSV remains available as a clean, portable raw-data format.
-- Public developer-name attribution was removed from the runtime UI and replaced by the supplied visual mark.
+## Reporting/export layer
+
+- Professional monthly and annual PDF reports with subtle brand watermark
+- Direct PNG export for quick sharing
+- Excel `.xlsx` export with Summary, Details/Breakdown, Analytics, formulas, formatting, and visual chart
+- CSV export for portable raw-data workflows
+- All report generation runs locally in the browser; no paid report service is required
 
 ## Multi-user data model
 
@@ -75,9 +79,14 @@ Production output is generated in `dist/` and is intentionally ignored by Git.
 
 ## Branding
 
-Product branding is centralized in `src/brand.js`. The white-label visual mark used by the runtime footer and report watermark is stored in `src/brand-mark.png`.
+Product branding is centralized in `src/brand.js`.
 
-User identity is dynamic and comes from the authenticated profile. No customer-specific name is hardcoded in runtime source.
+- Brand: `MySalary`
+- Descriptor: `Teaching Pay Audit`
+- Brand mark: `src/brand-mark.png`
+- PWA icons: `src/icon-192.png` and `src/icon-512.png`
+
+User identity is dynamic and comes from the authenticated profile. No customer-specific user name is hardcoded in runtime source.
 
 ## Security notes
 
@@ -87,6 +96,6 @@ User identity is dynamic and comes from the authenticated profile. No customer-s
 - Password changes require current-password reauthentication
 - Local-first writes before cloud synchronization
 - Safe sign-out is blocked if pending changes cannot be verified
-- Report generation occurs locally in the browser; no third-party PDF/PNG/Excel service is required
+- Report generation occurs locally in the browser
 
-See `docs/FIREBASE_SETUP.md`, `docs/IMPLEMENTATION_NOTES.md`, `docs/PDF_REPORTS.md`, `docs/AUTH_API.md`, and `docs/QA_CHECKLIST.md`.
+See `docs/FIREBASE_SETUP.md`, `docs/FIREBASE_EMAIL_TEMPLATES.md`, `docs/IMPLEMENTATION_NOTES.md`, `docs/PDF_REPORTS.md`, `docs/AUTH_API.md`, and `docs/QA_CHECKLIST.md`.

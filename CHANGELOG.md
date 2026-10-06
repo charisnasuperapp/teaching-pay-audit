@@ -1,3 +1,16 @@
+## 2.3.0 - MySalary Brand, Auth & Commercial Polish
+- Promoted MySalary to the public-facing product brand while retaining Teaching Pay Audit as the functional descriptor.
+- Replaced generic auth/loading/header artwork with the supplied brand mark.
+- Added a subtle hero watermark and branded PWA icons.
+- Improved password-reset privacy messaging and commercial authentication copy.
+- Added complete Firebase Authentication email-template documentation.
+- Preserved all v2.2 PDF, PNG, Excel, CSV, offline, sync, password-change, and safe-sign-out functionality.
+
+## v2.2.1 - Landing Brand Integration
+- Replaced generic auth/loader symbols with the supplied brand logo.
+- Added a subtle logo watermark to the landing showcase for a more professional branded first impression.
+- Kept the right-side login panel clean while strengthening brand identity across desktop and mobile auth views.
+
 # Changelog
 
 ## 2.2.0 - Reporting & White-Label Export Upgrade

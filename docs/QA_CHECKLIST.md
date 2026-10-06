@@ -1,4 +1,4 @@
-# QA Checklist - v2.2.0
+# QA Checklist - v2.3.0
 
 ## Authentication & data
 
@@ -41,3 +41,10 @@
 - Tablet width
 - Long names and long Class/Notes values
 - No visible personal developer name in login, Settings, footer, or report metadata
+
+## MySalary landing branding
+- Brand mark replaces generic auth/loading/header iconography.
+- Hero watermark remains subtle and never reduces text readability.
+- PWA icon uses the brand mark.
+- Password-reset UI uses privacy-safe success messaging.
+- Runtime UI contains no personal developer-name attribution.

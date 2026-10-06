@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Teaching Pay Audit remains a static offline-first application deployed to Vercel and synchronized with Firebase Authentication + Firestore on the Spark plan.
+MySalary remains a static offline-first application deployed to Vercel and synchronized with Firebase Authentication + Firestore on the Spark plan.
 
 ## Reporting modules
 

@@ -264,7 +264,7 @@ async function handleSubmit(event) {
     if (form.dataset.authForm === 'reset') {
       await cloud.sendPasswordReset(email);
       state.authMode = 'login';
-      state.authNotice = `A password reset link has been sent to ${email}.`;
+      state.authNotice = `If an account exists for ${email}, a password reset link has been sent.`;
       return;
     }
 
@@ -943,29 +943,30 @@ function render() {
 
 function renderAuthScreen() {
   if (state.authStatus === 'checking') {
-    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo">${icon('money', 34)}</div><span class="spinner"></span><h1>${escapeHtml(BRAND.appName)}</h1><p>Checking your session and preparing your workspace...</p></div></main>`;
+    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo brand-logo-badge"><img src="/brand-mark.png" alt="" aria-hidden="true"></div><span class="spinner"></span><h1>${escapeHtml(BRAND.appName)}</h1><p>Checking your session and preparing your workspace...</p></div></main>`;
   }
 
   if (state.authStatus === 'configuration-error') {
-    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo">${icon('money', 34)}</div><div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>Account access and synchronization require the Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add these environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
+    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo brand-logo-badge"><img src="/brand-mark.png" alt="" aria-hidden="true"></div><div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>Account access and synchronization require the Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add these environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
   }
 
   const isRegister = state.authMode === 'register';
   const isReset = state.authMode === 'reset';
-  const title = isRegister ? 'Create your workspace' : isReset ? 'Recover account access' : 'Welcome back';
+  const title = isRegister ? 'Create your MySalary workspace' : isReset ? 'Recover account access' : 'Welcome back';
   const description = isRegister
     ? 'Create one secure account for your teaching records. Your name personalizes the dashboard, reports, exports, and every device where you sign in.'
     : isReset
-      ? 'Enter your registered email address and we will send you a password recovery link.'
+      ? 'Enter your email address. If it is registered, we will send you a secure password recovery link.'
       : 'Sign in to access your teaching hours, earnings, professional reports, and synchronized workspace.';
   const passwordType = state.passwordVisible ? 'text' : 'password';
   const submitLabel = isRegister ? 'Create account' : isReset ? 'Send reset link' : 'Sign in';
 
   return `<main class="auth-shell">
     <section class="auth-showcase">
+      <div class="showcase-brand-watermark" aria-hidden="true"><img src="/brand-mark.png" alt=""></div>
       <div class="showcase-content">
         <div class="auth-brand inverse">
-          <div class="auth-logo">${icon('money', 34)}</div>
+          <div class="auth-logo brand-logo-badge"><img src="/brand-mark.png" alt="" aria-hidden="true"></div>
           <div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div>
         </div>
 
@@ -979,7 +980,7 @@ function renderAuthScreen() {
             <div>${icon('clock', 19)}</div><strong>Automatic pay tracking</strong><span>Record hours once and let the workspace calculate earnings instantly.</span>
           </article>
           <article class="showcase-feature-card">
-            <div>${icon('pdf', 19)}</div><strong>Professional reports</strong><span>Download polished monthly and annual PDF reports plus CSV exports.</span>
+            <div>${icon('pdf', 19)}</div><strong>Professional reports</strong><span>Export polished PDF, Excel, PNG, and CSV reports for monthly and annual records.</span>
           </article>
           <article class="showcase-feature-card">
             <div>${icon('shield', 19)}</div><strong>Private by account</strong><span>Each account has isolated records protected by secure Firebase authentication.</span>
@@ -1001,7 +1002,7 @@ function renderAuthScreen() {
 
     <section class="auth-panel">
       <div class="auth-panel-inner">
-        <div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.appName)}</strong><span>Professional teaching hours & pay workspace</span></div></div>
+        <div class="mobile-auth-brand"><div class="auth-logo brand-logo-badge"><img src="/brand-mark.png" alt="" aria-hidden="true"></div><div><strong>${escapeHtml(BRAND.appName)}</strong><span>Professional teaching hours & pay workspace</span></div></div>
         <div class="mobile-creator-note">${icon('shield', 16)} Private, account-based data with automatic synchronization.</div>
         <span class="eyebrow">SECURE ACCOUNT ACCESS</span>
         <h2>${title}</h2>
@@ -1010,7 +1011,7 @@ function renderAuthScreen() {
         <div class="auth-value-strip">
           <span>${icon('shield-check', 15)} Private data</span>
           <span>${icon('refresh', 15)} Auto sync</span>
-          <span>${icon('pdf', 15)} PDF reports</span>
+          <span>${icon('pdf', 15)} Pro reports</span>
         </div>
 
         ${state.authError ? `<div class="auth-alert error">${icon('warning', 18)}<span>${escapeHtml(state.authError)}</span></div>` : ''}
@@ -1036,7 +1037,7 @@ function renderHeader() {
   const statusLabel = cloudStatusLabel();
   const name = currentDisplayName();
   return `<header class="app-header">
-    <div class="brand-block"><div class="brand-logo">${icon('money', 26)}</div><div><h1>${escapeHtml(BRAND.appName)}</h1><p>Welcome, ${escapeHtml(name)}</p></div></div>
+    <div class="brand-block"><div class="brand-logo brand-logo-image"><img src="/brand-mark.png" alt="" aria-hidden="true"></div><div><h1>${escapeHtml(BRAND.appName)}</h1><p>${escapeHtml(BRAND.productName)} · Welcome, ${escapeHtml(name)}</p></div></div>
     <nav class="main-nav ${state.mobileMenuOpen ? 'open' : ''}">
       <button data-action="monthly-view" class="${state.view === 'monthly' ? 'active' : ''}">${icon('calendar', 18)} Monthly</button>
       <button data-action="yearly-view" class="${state.view === 'yearly' ? 'active' : ''}">${icon('history', 18)} Annual Summary</button>
@@ -1142,7 +1143,7 @@ function renderSettings() {
 
       <section class="settings-section about-settings-section">
         <div class="section-heading">${icon('signature', 20)}<div><h3>About</h3><p>Production workspace information.</p></div></div>
-        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.2.0')}</strong></div><div><span>Workspace</span><strong>Private & synchronized</strong></div></div>
+        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.3.0')}</strong></div><div><span>Workspace</span><strong>Private & synchronized</strong></div></div>
       </section>
 
       <section class="settings-section danger-zone"><div class="section-heading">${icon('trash', 20)}<div><h3>Danger zone</h3><p>Only the currently selected month's teaching entries will be cleared.</p></div></div><button class="button danger-outline" data-action="clear-month">${icon('trash', 17)} Clear this month</button></section>
