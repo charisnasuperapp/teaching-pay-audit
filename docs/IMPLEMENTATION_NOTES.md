@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Piola Salary is a static Progressive Web App with no custom backend server.
+Ayesha Salary is a static Progressive Web App with no custom backend server.
 
 ```text
 UI and event handling

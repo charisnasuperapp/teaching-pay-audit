@@ -29,7 +29,7 @@ createYearReportModel(database, year, generatedAt)
 ## Monthly report
 
 - A4 portrait.
-- Piola Salary identity and reporting metadata.
+- Ayesha Salary identity and reporting metadata.
 - Daily table: number, date, class, hours, rate, amount, and notes.
 - Multiline Class and Notes content with automatic wrapping.
 - Dynamic row heights and automatic page continuation.

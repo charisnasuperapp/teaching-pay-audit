@@ -1,3 +1,4 @@
+import { BRAND, BRAND_CREATED_FOR } from './brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth, validateEntry } from './lib/calculations.js';
 import { createDatabase, createMonth, ensureMonth, markMonthEdited, markSettingsEdited, mergeDatabases, sanitizeDatabase } from './lib/database.js';
 import { formatMonthKey, getMonthKeysForYear, getYear, shiftMonth, toMonthKey } from './lib/date.js';
@@ -716,23 +717,23 @@ function render() {
       <main class="content">${main}</main>
       ${state.settingsOpen ? renderSettings() : ''}
       ${state.logoutDialogOpen ? renderLogoutDialog() : ''}
-      <footer class="app-footer"><span>${icon('signature', 14)} Created by Charisna for Piola</span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private automatic synchronization</span></footer>
+      <footer class="app-footer"><span>${icon('signature', 14)} ${BRAND_CREATED_FOR}</span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private automatic synchronization</span></footer>
     </div>`;
   scheduleAutoGrowTextareas();
 }
 
 function renderAuthScreen() {
   if (state.authStatus === 'checking') {
-    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo">${icon('money', 34)}</div><span class="spinner"></span><h1>Teaching Pay Audit</h1><p>Checking your session and preparing synchronization...</p></div></main>`;
+    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo">${icon('money', 34)}</div><span class="spinner"></span><h1>${escapeHtml(BRAND.productName)}</h1><p>Checking your session and preparing synchronization...</p></div></main>`;
   }
 
   if (state.authStatus === 'configuration-error') {
-    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo">${icon('money', 34)}</div><div><span>PIOLA SALARY</span><h1>Teaching Pay Audit</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>The sign-in page requires Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add the following two environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
+    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo">${icon('money', 34)}</div><div><span>${escapeHtml(BRAND.appName.toUpperCase())}</span><h1>${escapeHtml(BRAND.productName)}</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>The sign-in page requires Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add the following two environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
   }
 
   const isRegister = state.authMode === 'register';
   const isReset = state.authMode === 'reset';
-  const title = isRegister ? "Set up Piola's workspace" : isReset ? 'Recover account access' : 'Welcome, Piola';
+  const title = isRegister ? `Set up ${BRAND.ownerName}'s workspace` : isReset ? 'Recover account access' : `Welcome, ${BRAND.ownerName}`;
   const description = isRegister
     ? 'Create one private account to access the same data on your phone, tablet, computer, and any other browser.'
     : isReset
@@ -742,8 +743,8 @@ function renderAuthScreen() {
   const submitLabel = isRegister ? 'Create account & sync' : isReset ? 'Send reset link' : 'Sign in & sync';
 
   return `<main class="auth-shell">
-    <section class="auth-showcase"><div class="showcase-content"><div class="auth-brand inverse"><div class="auth-logo">${icon('money', 34)}</div><div><span>PIOLA SALARY</span><h1>Teaching Pay Audit</h1></div></div><div class="creator-badge">${icon('signature', 16)} <span>PERSONAL WORKSPACE</span></div><span class="showcase-eyebrow">CREATED EXCLUSIVELY FOR PIOLA</span><h2>Created by Charisna.<br>Designed for Piola.</h2><p>This private workspace was created by Charisna exclusively for Piola to track teaching hours, audit earnings, and keep every report organized across devices.</p><div class="showcase-features"><span>${icon('signature', 18)} A personal Charisna × Piola workspace</span><span>${icon('refresh', 18)} Every change synchronizes automatically</span><span>${icon('shield', 18)} Data stays safe when the connection is interrupted</span></div><div class="showcase-status-card"><div><span>WORKSPACE STATUS</span><strong>Private & connected</strong></div><div class="status-orb"><i></i> Auto sync</div></div></div></section>
-    <section class="auth-panel"><div class="auth-panel-inner"><div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>Teaching Pay Audit</strong><span>Piola Salary</span></div></div><div class="mobile-creator-note">${icon('signature', 16)} Piola's private workspace, created by Charisna.</div><span class="eyebrow">PRIVATE WORKSPACE ACCESS</span><h2>${title}</h2><p class="auth-description">${description}</p>
+    <section class="auth-showcase"><div class="showcase-content"><div class="auth-brand inverse"><div class="auth-logo">${icon('money', 34)}</div><div><span>${escapeHtml(BRAND.appName.toUpperCase())}</span><h1>${escapeHtml(BRAND.productName)}</h1></div></div><div class="creator-badge">${icon('signature', 16)} <span>PERSONAL WORKSPACE</span></div><span class="showcase-eyebrow">CREATED EXCLUSIVELY FOR ${escapeHtml(BRAND.ownerName.toUpperCase())}</span><h2>Created by ${escapeHtml(BRAND.developerName)}.<br>Designed for ${escapeHtml(BRAND.ownerName)}.</h2><p>This private workspace was created by ${escapeHtml(BRAND.developerName)} exclusively for ${escapeHtml(BRAND.ownerName)} to track teaching hours, audit earnings, and keep every report organized across devices.</p><div class="showcase-features"><span>${icon('signature', 18)} A personal ${escapeHtml(BRAND.developerName)} × ${escapeHtml(BRAND.ownerName)} workspace</span><span>${icon('refresh', 18)} Every change synchronizes automatically</span><span>${icon('shield', 18)} Data stays safe when the connection is interrupted</span></div><div class="showcase-status-card"><div><span>WORKSPACE STATUS</span><strong>Private & connected</strong></div><div class="status-orb"><i></i> Auto sync</div></div></div></section>
+    <section class="auth-panel"><div class="auth-panel-inner"><div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.productName)}</strong><span>${escapeHtml(BRAND.appName)}</span></div></div><div class="mobile-creator-note">${icon('signature', 16)} ${escapeHtml(BRAND.ownerName)}'s private workspace, created by ${escapeHtml(BRAND.developerName)}.</div><span class="eyebrow">PRIVATE WORKSPACE ACCESS</span><h2>${title}</h2><p class="auth-description">${description}</p>
       ${state.authError ? `<div class="auth-alert error">${icon('warning', 18)}<span>${escapeHtml(state.authError)}</span></div>` : ''}
       ${state.authNotice ? `<div class="auth-alert success">${icon('check', 18)}<span>${escapeHtml(state.authNotice)}</span></div>` : ''}
       <form class="auth-form" data-auth-form="${isReset ? 'reset' : isRegister ? 'register' : 'login'}">
@@ -763,7 +764,7 @@ function renderAuthScreen() {
 function renderHeader() {
   const statusLabel = cloudStatusLabel();
   return `<header class="app-header">
-    <div class="brand-block"><div class="brand-logo">${icon('money', 26)}</div><div><h1>Teaching Pay Audit</h1><p>Piola's private workspace</p></div></div>
+    <div class="brand-block"><div class="brand-logo">${icon('money', 26)}</div><div><h1>${escapeHtml(BRAND.productName)}</h1><p>${escapeHtml(BRAND.ownerName)}'s private workspace</p></div></div>
     <nav class="main-nav ${state.mobileMenuOpen ? 'open' : ''}">
       <button data-action="monthly-view" class="${state.view === 'monthly' ? 'active' : ''}">${icon('calendar', 18)} Monthly</button>
       <button data-action="yearly-view" class="${state.view === 'yearly' ? 'active' : ''}">${icon('history', 18)} Annual Summary</button>

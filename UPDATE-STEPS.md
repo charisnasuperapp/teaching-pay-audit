@@ -1,16 +1,17 @@
-# Update to v1.8.0
+# Ayesha Salary - Deployment Steps
 
-1. Open the current application and wait until the status shows **Cloud active**.
-2. Open **Settings** and download a JSON backup.
-3. Extract the v1.8.0 ZIP package.
-4. Replace the existing repository files with every file inside `audit-gaji-vercel-v1.8.0`.
-5. Commit the changes with:
+1. Keep the `Ayesha-salary` GitHub repository private.
+2. Upload this package so `package.json`, `vercel.json`, `src/`, `firebase/`, `docs/`, `scripts/`, and `tests/` are at repository root.
+3. Create a separate Firebase project owned by Ayesha/customer.
+4. Enable Firebase Authentication -> Email/Password.
+5. Create Cloud Firestore in Production mode.
+6. Publish `firebase/firestore.rules`.
+7. Register a Firebase Web App and copy its `apiKey` and `projectId`.
+8. Import the `Ayesha-salary` repository into Ayesha's Vercel account.
+9. Add `VITE_FIREBASE_API_KEY` and `VITE_FIREBASE_PROJECT_ID` to Vercel Environment Variables.
+10. Deploy using `npm run build` with output directory `dist`.
+11. Test account creation, login, cross-browser synchronization, offline/online recovery, safe sign-out, CSV, JSON backup, monthly PDF, and annual PDF before handover.
 
-   `Update v1.8.0 - direct PDF download and improved report layout`
+## Future customer copies
 
-6. Wait for the Vercel Production deployment to show **Ready**.
-7. Close the old tab or installed PWA and open it again.
-8. On Windows, press `Ctrl + Shift + R` once if the old **Professional PDF** button remains visible.
-9. Confirm the new buttons display **Download PDF** and **Download Annual PDF**.
-
-Firebase Environment Variables, Authentication providers, and Firestore Rules do not need to be changed.
+Change customer-facing identity in `src/brand.js` before creating the next customer's Firebase/Vercel stack. Each customer must use a separate Firebase project.

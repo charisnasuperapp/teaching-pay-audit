@@ -1,3 +1,4 @@
+import { BRAND } from '../brand.js';
 const POINTS_PER_MM = 72 / 25.4;
 const A4 = Object.freeze({ width: 210 * POINTS_PER_MM, height: 297 * POINTS_PER_MM });
 
@@ -27,7 +28,7 @@ const COLORS = Object.freeze({
 });
 
 export class PdfDocument {
-  constructor({ width, height, title = 'Document', author = 'Piola Salary' }) {
+  constructor({ width, height, title = 'Document', author = BRAND.appName }) {
     this.width = width;
     this.height = height;
     this.title = title;
@@ -72,7 +73,7 @@ export class PdfDocument {
     });
 
     const now = new Date();
-    objects[infoId] = `<< /Title (${escapePdfString(this.title)}) /Author (${escapePdfString(this.author)}) /Creator (Piola Salary) /Producer (Piola Salary PDF Engine) /CreationDate (D:${formatPdfDate(now)}) >>`;
+    objects[infoId] = `<< /Title (${escapePdfString(this.title)}) /Author (${escapePdfString(this.author)}) /Creator (${escapePdfString(BRAND.appName)}) /Producer (${escapePdfString(`${BRAND.appName} PDF Engine`)}) /CreationDate (D:${formatPdfDate(now)}) >>`;
 
     let output = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
     const offsets = [0];
@@ -200,7 +201,7 @@ export function downloadPdf(bytes, filename) {
   if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
     throw new Error('PDF download is only available in a browser.');
   }
-  const safeName = String(filename || 'piola-salary-report.pdf').endsWith('.pdf') ? String(filename) : `${filename}.pdf`;
+  const safeName = String(filename || `${BRAND.slug}-report.pdf`).endsWith('.pdf') ? String(filename) : `${filename}.pdf`;
   const blob = new Blob([bytes], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

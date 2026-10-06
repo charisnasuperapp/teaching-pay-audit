@@ -1,6 +1,6 @@
 {
-  "name": "audit-gaji-mengajar",
-  "version": "1.8.0",
+  "name": "teaching-pay-audit",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {

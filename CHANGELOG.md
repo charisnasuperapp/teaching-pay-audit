@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.0 - Ayesha customer edition
+
+- Prepared the complete customer edition for Ayesha Salary.
+- Added centralized runtime branding in `src/brand.js` for faster future customer duplication.
+- Browser title, PWA metadata, login screen, dashboard, PDF identity, CSV/PDF/backup filenames, and report metadata now follow the central brand configuration.
+- Removed stale sample PDF files from the source package.
+- Preserved Firebase Authentication, Firestore synchronization, offline-first behavior, safe logout, multiline fields, CSV/JSON export, and direct PDF download.
+- Bumped the service-worker cache to avoid stale customer assets after deployment.
+
 ## 1.8.0 - Direct PDF Download and Report Layout Refinement
 
 - Replaced the CSP-sensitive `about:blank` print preview with direct client-side PDF generation.
@@ -33,7 +42,7 @@
 - Removed the ambiguous Unique Classes metric from calculations, dashboard cards, annual tables, CSV files, and PDF reports.
 - Optimized the annual PDF to remain on one A4 landscape page without a nearly empty trailing page.
 - Updated month names and hour formatting to the `en-US` locale.
-- Updated CSV and backup filenames to use the Piola Salary naming convention.
+- Updated CSV and backup filenames to use the Ayesha Salary naming convention.
 - Updated Service Worker cache to v1.6.0.
 
 ### Compatibility
@@ -58,7 +67,7 @@
 
 ## 1.4.0 - Personal UI and Safe Sign Out
 
-- Added personalized Charisna/Piola branding.
+- Added personalized Charisna/Ayesha branding.
 - Added verified Safe Sign Out.
 
 ## 1.3.0 - Account Login and Cross-Browser Sync

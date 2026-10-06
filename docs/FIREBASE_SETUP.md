@@ -1,10 +1,10 @@
 # Firebase Spark Setup
 
-Piola Salary uses Firebase Authentication and Cloud Firestore through REST APIs. It does not require Cloud Functions, Firebase Storage, or the Blaze plan.
+Ayesha Salary uses Firebase Authentication and Cloud Firestore through REST APIs. It does not require Cloud Functions, Firebase Storage, or the Blaze plan.
 
 ## 1. Create or open the Firebase project
 
-Use the existing `piola-salary` project or create a new Firebase project on the Spark plan. Google Analytics is optional and not required by the application.
+Use the existing `ayesha-salary` project or create a new Firebase project on the Spark plan. Google Analytics is optional and not required by the application.
 
 ## 2. Register a Web application
 
@@ -56,7 +56,7 @@ In **Authentication -> Settings -> Authorized domains**, add the production Verc
 Example:
 
 ```text
-piola-salary.vercel.app
+ayesha-salary.vercel.app
 ```
 
 Do not include `https://` or a trailing slash.

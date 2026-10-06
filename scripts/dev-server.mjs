@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import './build.mjs';
+import { BRAND } from '../src/brand.js';
 
 const root = resolve(import.meta.dirname, '..', 'dist');
 const port = Number(process.env.PORT || 4173);
@@ -30,4 +31,4 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end('Not found');
   }
-}).listen(port, () => console.log(`Piola Salary is running at http://localhost:${port}`));
+}).listen(port, () => console.log(`${BRAND.appName} is running at http://localhost:${port}`));

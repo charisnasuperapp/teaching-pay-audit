@@ -1,6 +1,6 @@
 # Authentication and Cloud API
 
-Piola Salary calls Firebase REST endpoints directly so the production build remains static and lightweight without the Firebase JavaScript SDK.
+Ayesha Salary calls Firebase REST endpoints directly so the production build remains static and lightweight without the Firebase JavaScript SDK.
 
 ## Authentication endpoints
 

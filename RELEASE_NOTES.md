@@ -1,26 +1,16 @@
-# Release Notes - v1.8.0
+# Ayesha Salary v1.9.0
 
-## Direct PDF Download and Improved Report Spacing
+A customer-ready edition of Teaching Pay Audit for Ayesha. The application keeps the full v1.8.0 feature set while moving visible customer identity into a centralized branding configuration.
 
-The previous PDF workflow opened an `about:blank` print-preview window and depended on the browser print dialog. In some browsers and installed PWAs, the **Save as PDF** button did not trigger a reliable download, while the preview could lose its stylesheet because the production Content Security Policy blocks inline styles and scripts.
+## Highlights
 
-Version 1.8.0 replaces that workflow with a native client-side PDF generator.
+- Ayesha-specific login, dashboard, exports, and professional PDF reports.
+- Fast automatic Firebase synchronization across browsers and devices.
+- Offline-first local persistence and safe verified sign-out.
+- Direct PDF download, CSV export, and JSON backup/restore.
+- Multiline Class and Notes fields.
+- Central branding file: `src/brand.js`.
 
-### Improvements
+## Backend separation
 
-- Monthly and annual reports now download directly as `.pdf` files.
-- No popup, `about:blank` page, print dialog, or printer selection is required.
-- PDF generation remains offline-first and does not send salary data to an external service.
-- Report spacing, row padding, metadata cards, signatures, and footer placement were redesigned.
-- Long Class and Notes content wraps automatically and retains manual line breaks.
-- Long monthly reports create additional pages and repeat the report/table header.
-- Every page includes a page number and generation timestamp.
-- The annual report remains a clean one-page A4 landscape document.
-- Buttons now clearly say **Download PDF** and **Download Annual PDF**.
-
-### Compatibility
-
-- No Firebase migration is required.
-- No Firestore Rules change is required.
-- No additional Vercel Environment Variables are required.
-- Existing records, accounts, backups, CSV exports, and synchronization remain compatible.
+This source package does not contain Ayesha's Firebase credentials. Create a dedicated Firebase project for Ayesha and provide `VITE_FIREBASE_API_KEY` and `VITE_FIREBASE_PROJECT_ID` in Ayesha's Vercel project.

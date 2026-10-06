@@ -1,3 +1,4 @@
+import { BRAND, BRAND_CREATED_EXCLUSIVELY, BRAND_TITLE } from '../brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth } from './calculations.js';
 import { formatMonthKey, getMonthKeysForYear } from './date.js';
 import { PdfDocument, PDF_PAGE, downloadPdf, wrapText } from './pdf-core.js';
@@ -39,12 +40,12 @@ const YEARLY_COLUMNS = Object.freeze([
 
 export function exportMonthPdf(month, teacherName) {
   const bytes = buildMonthReportPdf(month, teacherName);
-  downloadPdf(bytes, `piola-salary-monthly-${month.monthKey}.pdf`);
+  downloadPdf(bytes, `${BRAND.slug}-monthly-${month.monthKey}.pdf`);
 }
 
 export function exportYearPdf(database, year) {
   const bytes = buildYearReportPdf(database, year);
-  downloadPdf(bytes, `piola-salary-annual-${year}.pdf`);
+  downloadPdf(bytes, `${BRAND.slug}-annual-${year}.pdf`);
 }
 
 export function buildMonthReportPdf(month, teacherName, generatedAt = new Date()) {
@@ -52,7 +53,7 @@ export function buildMonthReportPdf(month, teacherName, generatedAt = new Date()
   const document = new PdfDocument({
     ...PDF_PAGE.A4_PORTRAIT,
     title: `Monthly Teaching Pay Report - ${model.periodLabel}`,
-    author: 'Piola Salary',
+    author: BRAND.appName,
   });
   renderMonthReport(document, model);
   return document.toUint8Array();
@@ -63,7 +64,7 @@ export function buildYearReportPdf(database, year, generatedAt = new Date()) {
   const document = new PdfDocument({
     ...PDF_PAGE.A4_LANDSCAPE,
     title: `Annual Teaching Pay Report - ${year}`,
-    author: 'Piola Salary',
+    author: BRAND.appName,
   });
   renderYearReport(document, model);
   return document.toUint8Array();
@@ -86,7 +87,7 @@ export function createMonthReportModel(month, teacherName, generatedAt = new Dat
 
   return {
     type: 'monthly',
-    teacherName: String(teacherName || 'Piola'),
+    teacherName: String(teacherName || BRAND.ownerName),
     periodLabel: formatMonthKey(month.monthKey),
     monthKey: month.monthKey,
     hourlyRate: month.hourlyRate,
@@ -125,7 +126,7 @@ export function createYearReportModel(database, year, generatedAt = new Date()) 
   return {
     type: 'annual',
     year,
-    teacherName: String(database.settings?.teacherName || 'Piola'),
+    teacherName: String(database.settings?.teacherName || BRAND.ownerName),
     generatedLabel: formatGeneratedAt(generatedAt),
     months,
     totals,
@@ -188,7 +189,7 @@ function renderMonthReport(document, model) {
   drawSignatureSection(page, model.teacherName, margin, y - 24);
 
   addPageFooters(pages, {
-    leftText: 'Piola Salary - Teaching Pay Audit',
+    leftText: BRAND_TITLE,
     rightText: `Generated ${model.generatedLabel}`,
     margin,
   });
@@ -227,7 +228,7 @@ function renderYearReport(document, model) {
 
   drawAnnualInsights(page, model, margin, y - 10);
   addPageFooters([page], {
-    leftText: 'Piola Salary - Teaching Pay Audit',
+    leftText: BRAND_TITLE,
     rightText: `Generated ${model.generatedLabel}`,
     margin,
   });
@@ -242,9 +243,9 @@ function drawReportHeader(page, { margin, reportType, periodLabel, continuation 
   page.fillRect(margin, markY, markSize, markSize, COLORS.primary);
   page.text('$', margin + markSize / 2, markY + 10, { size: 21, bold: true, color: COLORS.white, align: 'center' });
 
-  page.text('PIOLA SALARY', margin + 48, markY + 27, { size: 8, bold: true, color: COLORS.primary });
-  page.text('Teaching Pay Audit', margin + 48, markY + 11, { size: 16, bold: true, color: COLORS.ink });
-  page.text('Created by Charisna exclusively for Piola', margin + 48, markY - 1, { size: 7.5, color: COLORS.muted });
+  page.text(BRAND.appName.toUpperCase(), margin + 48, markY + 27, { size: 8, bold: true, color: COLORS.primary });
+  page.text(BRAND.productName, margin + 48, markY + 11, { size: 16, bold: true, color: COLORS.ink });
+  page.text(BRAND_CREATED_EXCLUSIVELY, margin + 48, markY - 1, { size: 7.5, color: COLORS.muted });
 
   page.text(reportType.toUpperCase(), page.width - margin, markY + 26, { size: 7.5, bold: true, color: COLORS.muted, align: 'right' });
   page.text(periodLabel, page.width - margin, markY + 8, { size: 16, bold: true, color: COLORS.primaryDark, align: 'right' });
@@ -268,7 +269,7 @@ function drawMonthlyIntroduction(page, model, margin, y) {
   page.strokeRect(statusX, statusY, statusWidth, statusHeight, { color: [0.78, 0.83, 1], lineWidth: 0.7 });
   page.text('DOCUMENT STATUS', statusX + 10, statusY + 29, { size: 6.5, bold: true, color: COLORS.muted });
   page.text('RECORDED', statusX + 10, statusY + 15, { size: 11, bold: true, color: COLORS.success });
-  page.text('Generated from Piola Salary', statusX + 10, statusY + 6, { size: 6.5, color: COLORS.muted });
+  page.text(`Generated from ${BRAND.appName}`, statusX + 10, statusY + 6, { size: 6.5, color: COLORS.muted });
 
   const cardsTop = y - 69;
   drawMetaCards(page, [
@@ -396,7 +397,7 @@ function drawSignatureSection(page, teacherName, margin, topY) {
 
   page.text('Prepared by', margin + boxWidth / 2, topY, { size: 8, color: COLORS.muted, align: 'center' });
   page.line(margin + 12, lineY, margin + boxWidth - 12, lineY, { color: [0.55, 0.59, 0.66], lineWidth: 0.7 });
-  page.text(teacherName || 'Piola', margin + boxWidth / 2, lineY - 14, { size: 9, bold: true, color: COLORS.ink, align: 'center', maxWidth: boxWidth - 24 });
+  page.text(teacherName || BRAND.ownerName, margin + boxWidth / 2, lineY - 14, { size: 9, bold: true, color: COLORS.ink, align: 'center', maxWidth: boxWidth - 24 });
   page.text('Teacher', margin + boxWidth / 2, lineY - 26, { size: 7.5, color: COLORS.muted, align: 'center' });
 
   const secondX = margin + boxWidth + gap;

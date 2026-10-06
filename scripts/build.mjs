@@ -1,5 +1,6 @@
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { BRAND, BRAND_TITLE } from '../src/brand.js';
 
 const root = resolve(import.meta.dirname, '..');
 const source = resolve(root, 'src');
@@ -14,7 +15,29 @@ const firebase = {
   projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || '',
 };
 
-const config = `window.__AUDIT_GAJI_CONFIG__ = ${JSON.stringify({ firebase }, null, 2)};\n`;
+const config = `window.__AUDIT_GAJI_CONFIG__ = ${JSON.stringify({ firebase, brand: BRAND }, null, 2)};\n`;
 await writeFile(resolve(output, 'config.js'), config, 'utf8');
+
+const htmlPath = resolve(output, 'index.html');
+const html = (await readFile(htmlPath, 'utf8'))
+  .replaceAll('__APP_TITLE__', escapeHtml(BRAND_TITLE))
+  .replaceAll('__APP_DESCRIPTION__', escapeHtml(BRAND.description));
+await writeFile(htmlPath, html, 'utf8');
+
+const manifestPath = resolve(output, 'manifest.webmanifest');
+const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+manifest.name = BRAND_TITLE;
+manifest.short_name = BRAND.appName;
+manifest.description = BRAND.description;
+manifest.lang = BRAND.locale;
+await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
 console.log(`Build completed: ${output}`);
 console.log(firebase.apiKey && firebase.projectId ? 'Firebase sign-in and cloud sync: enabled' : 'Firebase sign-in: disabled (environment variables are required for production)');

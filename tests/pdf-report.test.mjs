@@ -26,12 +26,12 @@ test('monthly report produces a directly downloadable PDF document with accurate
   };
   month.entries[2] = { day: 2, className: 'Math', hours: 2.5, notes: '' };
 
-  const bytes = buildMonthReportPdf(month, 'Piola Surya Anggreini', new Date('2026-08-03T06:16:00Z'));
+  const bytes = buildMonthReportPdf(month, 'Ayesha', new Date('2026-08-03T06:16:00Z'));
   const pdf = decodePdf(bytes);
 
   assert.equal(bytes.slice(0, 8).every((value, index) => value === new TextEncoder().encode('%PDF-1.4')[index]), true);
   assert.match(pdf, /Monthly Teaching Pay Report - August 2026/);
-  assert.match(pdf, /Piola Surya Anggreini/);
+  assert.match(pdf, /Ayesha/);
   assert.match(pdf, /17K3 CS 1/);
   assert.match(pdf, /2015 CLC2 CS 1/);
   assert.match(pdf, /\$65\.00/);
@@ -43,7 +43,7 @@ test('monthly report produces a directly downloadable PDF document with accurate
 test('monthly report model preserves manual line breaks and excludes empty days', () => {
   const month = createMonth('2026-08', 10);
   month.entries[1] = { day: 1, className: 'Class A\nClass B', hours: 4, notes: 'Line 1\nLine 2' };
-  const model = createMonthReportModel(month, 'Piola', new Date('2026-08-03T06:16:00Z'));
+  const model = createMonthReportModel(month, 'Ayesha', new Date('2026-08-03T06:16:00Z'));
 
   assert.equal(model.entries.length, 1);
   assert.equal(model.entries[0].className, 'Class A\nClass B');
@@ -63,7 +63,7 @@ test('very long monthly content creates a valid multi-page PDF with repeated pag
     };
   }
 
-  const pdf = decodePdf(buildMonthReportPdf(month, 'Piola', new Date('2026-08-03T06:16:00Z')));
+  const pdf = decodePdf(buildMonthReportPdf(month, 'Ayesha', new Date('2026-08-03T06:16:00Z')));
   assert.ok(pageCount(pdf) > 1);
   assert.match(pdf, /Page 1 of/);
   assert.match(pdf, /CONTINUED/);
@@ -72,7 +72,7 @@ test('very long monthly content creates a valid multi-page PDF with repeated pag
 
 test('annual report produces one professional landscape PDF with 12 months and correct totals', () => {
   const database = createDatabase();
-  database.settings.teacherName = 'Piola';
+  database.settings.teacherName = 'Ayesha';
   const january = createMonth('2026-01', 10);
   january.entries[1] = { day: 1, className: 'Class A', hours: 4, notes: '' };
   const february = createMonth('2026-02', 12);

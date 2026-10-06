@@ -1,3 +1,4 @@
+import { BRAND, BRAND_TITLE } from '../brand.js';
 import { calculatePay, summarizeMonth } from './calculations.js';
 import { formatMonthKey, getMonthKeysForYear } from './date.js';
 
@@ -33,7 +34,7 @@ export function exportMonthCsv(month) {
   const summary = summarizeMonth(month);
   rows.push([]);
   rows.push(['MONTHLY TOTAL', '', summary.totalHours, '', summary.totalPay, '']);
-  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `piola-salary-monthly-${month.monthKey}.csv`);
+  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-monthly-${month.monthKey}.csv`);
 }
 
 export function exportYearCsv(database, year) {
@@ -58,14 +59,14 @@ export function exportYearCsv(database, year) {
   }
   rows.push([]);
   rows.push([`TOTAL ${year}`, totalDays, Math.round(totalHours * 100) / 100, '', '', Math.round(totalPay * 100) / 100]);
-  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `piola-salary-annual-${year}.csv`);
+  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-annual-${year}.csv`);
 }
 
 export function exportBackup(database) {
   download(
-    JSON.stringify({ application: 'Piola Salary - Teaching Pay Audit', exportedAt: new Date().toISOString(), data: database }, null, 2),
+    JSON.stringify({ application: BRAND_TITLE, exportedAt: new Date().toISOString(), data: database }, null, 2),
     'application/json',
-    `piola-salary-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    `${BRAND.slug}-backup-${new Date().toISOString().slice(0, 10)}.json`,
   );
 }
 

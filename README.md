@@ -1,6 +1,6 @@
-# Piola Salary - Teaching Pay Audit
+# Ayesha Salary - Teaching Pay Audit
 
-A private, offline-first workspace created by Charisna for Piola to record teaching hours, calculate monthly pay, review annual earnings, export professional reports, and keep data synchronized across devices.
+A private, offline-first workspace created by Charisna for Ayesha to record teaching hours, calculate monthly pay, review annual earnings, export professional reports, and keep data synchronized across devices.
 
 ## Core features
 
@@ -110,3 +110,10 @@ Detailed instructions are available in `docs/FIREBASE_SETUP.md` and `docs/DEPLOY
 - Windows 10/11 with Chrome or Edge.
 - Modern Chromium-based desktop browsers.
 - Vercel static hosting and Firebase Spark plan.
+
+
+## Rebrand for another customer
+
+Runtime branding is centralized in `src/brand.js`. For the next customer, change the values in that one file, then run `npm run build`. The application UI, login screen, PDF metadata, PDF/CSV/backup filenames, PWA title, manifest, browser title, and generated report identity use that configuration.
+
+Firebase remains customer-specific. Every customer should have a separate Firebase project and Vercel environment variables. Do not reuse Ayesha's Firebase project for another customer.

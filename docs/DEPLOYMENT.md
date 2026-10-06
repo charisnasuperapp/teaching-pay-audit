@@ -43,7 +43,7 @@ Enable both variables for Production and Preview, save them, and redeploy.
 
 The Service Worker uses cache `audit-gaji-v1.8.0` with a network-first strategy. Older caches are removed during activation. When an old interface remains visible:
 
-1. Close every Piola Salary tab and PWA window.
+1. Close every Ayesha Salary tab and PWA window.
 2. Reopen the production URL.
 3. Perform one hard refresh.
 4. On Android, force-close the PWA and reopen it.
