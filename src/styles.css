@@ -901,3 +901,15 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
   .auth-panel { padding-top: 24px; padding-bottom: 24px; }
   .auth-panel-inner { padding-top: 28px; padding-bottom: 28px; }
 }
+
+/* v2.2 report/export polish */
+.footer-brand-symbol { min-width: 30px; justify-content: center; }
+.footer-brand-symbol img { width: 26px; height: 26px; object-fit: contain; border-radius: 8px; opacity: .78; filter: grayscale(1) contrast(1.08); }
+.auth-product-foot { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.auth-product-foot img { width: 24px; height: 24px; object-fit: contain; border-radius: 7px; opacity: .72; filter: grayscale(1) contrast(1.08); }
+.toolbar-actions .button.compact { min-width: 76px; justify-content: center; }
+@media (max-width: 720px) {
+  .toolbar-actions { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .toolbar-actions .audit-status, .toolbar-actions .rate-control { grid-column: 1 / -1; }
+  .toolbar-actions .button.compact { width: 100%; }
+}

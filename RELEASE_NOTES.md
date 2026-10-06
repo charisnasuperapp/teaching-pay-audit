@@ -1,34 +1,33 @@
-# Teaching Pay Audit v2.1.0 — Commercial UI & Account Security
+# Teaching Pay Audit v2.2.0 - Reporting & White-Label Export Upgrade
 
-This release focuses on product presentation and day-to-day account security while preserving the stable multi-user architecture introduced in v2.0.0.
+This release focuses on report quality, shareability, spreadsheet usefulness, and white-label presentation while preserving the stable multi-user architecture.
 
 ## Highlights
 
-- More professional public login and sign-up experience suitable for a commercial deployment.
-- New educator-focused product copy and feature presentation.
-- New Account security section in Settings.
-- Password changes require the current password before Firebase updates credentials.
-- Successful password changes refresh the active session automatically.
-- New passwords and new account registrations require at least 8 characters at the application layer.
-- Settings now presents profile, security, pay settings, backup, cloud synchronization, About information, and the danger zone more clearly.
-- Existing Firebase Authentication, Firestore UID isolation, auto-sync, safe sign-out, offline-first storage, PDF, CSV, backup, and multiline editing are unchanged.
+- Cleaner monthly and annual PDF layouts with no overlapping header or metadata content.
+- Subtle visual watermark using the supplied brand mark.
+- Direct PNG download for quick sharing through messaging apps.
+- Professional Excel `.xlsx` export with multiple sheets, formulas, formatting, and an embedded analytics chart.
+- Improved CSV output for raw-data workflows.
+- Runtime developer-name attribution removed and replaced with the brand mark.
+- CSV, Excel, PNG, and PDF export options available from both monthly and annual reporting views.
 
 ## Firebase impact
 
-No new Firebase service is required and no Blaze Plan feature is introduced.
+No Firestore schema migration is required. No paid Firebase or Vercel service is introduced.
 
-Existing deployment requirements remain:
+Existing requirements remain:
 
 ```text
 Authentication: Email/Password enabled
-Firestore: Production database
+Firestore: Production database with UID-scoped rules
 Vercel: VITE_FIREBASE_API_KEY + VITE_FIREBASE_PROJECT_ID
 ```
 
-The existing v2.0 Firestore rules remain compatible because password changes are handled by Firebase Authentication rather than Firestore.
-
 ## Validation
 
-- Automated tests include password reauthentication/update coverage.
-- Syntax validation passed.
-- Production build passed.
+- Automated test suite includes PDF watermark, Excel workbook structure, and export UI coverage.
+- JavaScript syntax validation passes.
+- Production build passes.
+- Monthly and annual PDFs were rendered and visually inspected.
+- Generated Excel workbook was imported and inspected successfully with no formula errors.

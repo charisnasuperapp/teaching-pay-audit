@@ -6,9 +6,9 @@ import { BRAND, BRAND_TITLE } from '../src/brand.js';
 
 test('multi-user product branding is centralized and customer-neutral', async () => {
   assert.equal(BRAND.appName, 'Teaching Pay Audit');
-  assert.equal(BRAND.productName, 'Professional Teaching Hours & Pay Workspace');
-  assert.equal(BRAND.version, '2.1.0');
-  assert.equal(BRAND.developerName, 'Charisna');
+  assert.equal(BRAND.productName, 'Teaching Hours & Pay Workspace');
+  assert.equal(BRAND.version, '2.2.0');
+  assert.equal('developerName' in BRAND, false);
   assert.equal(BRAND.slug, 'teaching-pay-audit');
   assert.equal(BRAND_TITLE, 'Teaching Pay Audit');
 
@@ -17,12 +17,14 @@ test('multi-user product branding is centralized and customer-neutral', async ()
     'src/lib/export.js',
     'src/lib/pdf-core.js',
     'src/lib/pdf-report.js',
+    'src/lib/report-image.js',
+    'src/lib/xlsx-export.js',
     'src/index.html',
     'src/manifest.webmanifest',
   ];
   for (const relativePath of sourceFiles) {
     const contents = await readFile(resolve(import.meta.dirname, '..', relativePath), 'utf8');
     assert.match(contents, /BRAND|__APP_|Teaching Pay Audit/, `${relativePath} must use centralized product branding`);
-    assert.doesNotMatch(contents, /Ayesha Salary|Piola Salary/, `${relativePath} must not contain customer-specific product branding`);
+    assert.doesNotMatch(contents, /Ayesha Salary|Piola Salary|Developed by/i, `${relativePath} must not contain customer-specific or developer-identifying branding`);
   }
 });

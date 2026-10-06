@@ -1,26 +1,26 @@
-# PDF Reports
+# PDF and Image Reporting
 
-Teaching Pay Audit generates PDF files directly in the browser.
+## PDF layout
 
-## Monthly report
+Monthly reports use A4 portrait. Annual reports use A4 landscape.
 
-- A4 portrait
-- Signed-in user's profile name
-- Reporting period
-- Hourly rate
-- Daily Class / Hours / Rate / Amount / Notes
-- Multiline text support
-- Monthly total
-- Signature/review area
-- Repeated table header on additional pages
-- Page numbering
+The report engine uses a fixed safe margin, repeatable table headers, dynamic row heights for multiline Class/Notes values, page-number footers, and a simplified hierarchy to prevent overlapping content.
 
-## Annual report
+Monthly metadata is rendered in a 2x2 grid:
 
-- A4 landscape
-- Signed-in user's profile name
-- Twelve-month summary
-- Teaching days, hours, rates, and earnings
-- Annual totals and key insights
+- Teacher
+- Reporting Period
+- Hourly Rate
+- Generated On
 
-No remote PDF service is used.
+The supplied visual mark is embedded into every PDF page as a background image with approximately 4-5% opacity. It is intentionally faint and placed behind report content.
+
+## PNG export
+
+PNG reports are generated locally using the Canvas API. Monthly PNG height expands with report content instead of forcing a page break. Annual PNG uses a landscape report layout.
+
+No server-side image generation is used.
+
+## Privacy
+
+PDF and PNG generation occurs entirely on the user's device. No report data is sent to an external report-rendering service.

@@ -8,26 +8,45 @@ function download(content, type, filename) {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = 'noopener';
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 function csvCell(value) {
   const text = String(value ?? '');
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function csv(rows) {
+  return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
+}
+
+function hasReportContent(entry) {
+  return Number(entry?.hours) > 0 || String(entry?.className || '').trim() || String(entry?.notes || '').trim();
+}
+
+function generatedAt() {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(new Date());
 }
 
 export function exportMonthCsv(month, displayName = 'Teacher') {
+  const entries = Object.values(month.entries || {}).filter(hasReportContent).sort((a, b) => Number(a.day) - Number(b.day));
   const rows = [
-    [BRAND_TITLE],
+    [BRAND_TITLE, 'Monthly Teaching Pay Report'],
     ['Prepared for', displayName],
     ['Reporting period', formatMonthKey(month.monthKey)],
+    ['Hourly rate (USD)', month.hourlyRate],
+    ['Generated on', generatedAt()],
     [],
-    ['Date', 'Class', 'Hours', 'Hourly Rate (USD)', 'Amount (USD)', 'Notes'],
-    ...Object.values(month.entries).map((entry) => [
-      entry.day,
+    ['No.', 'Date', 'Class', 'Hours', 'Hourly Rate (USD)', 'Amount (USD)', 'Notes'],
+    ...entries.map((entry, index) => [
+      index + 1,
+      `${month.monthKey}-${String(entry.day).padStart(2, '0')}`,
       entry.className,
       entry.hours,
       month.hourlyRate,
@@ -37,28 +56,30 @@ export function exportMonthCsv(month, displayName = 'Teacher') {
   ];
   const summary = summarizeMonth(month);
   rows.push([]);
-  rows.push(['MONTHLY TOTAL', '', summary.totalHours, '', summary.totalPay, '']);
-  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-monthly-${month.monthKey}.csv`);
+  rows.push(['MONTHLY TOTAL', '', '', summary.totalHours, '', summary.totalPay, `${summary.activeDays} teaching days`]);
+  download(csv(rows), 'text/csv;charset=utf-8', `${BRAND.slug}-monthly-${month.monthKey}.csv`);
 }
 
 export function exportYearCsv(database, year, displayName = 'Teacher') {
   const rows = [
-    [BRAND_TITLE],
+    [BRAND_TITLE, 'Annual Teaching Pay Report'],
     ['Prepared for', displayName],
     ['Reporting year', year],
+    ['Generated on', generatedAt()],
     [],
-    ['Month', 'Teaching Days', 'Total Hours', 'Average Hours/Day', 'Hourly Rate (USD)', 'Total Pay (USD)'],
+    ['No.', 'Month', 'Teaching Days', 'Total Hours', 'Average Hours/Day', 'Hourly Rate (USD)', 'Total Pay (USD)'],
   ];
   let totalDays = 0;
   let totalHours = 0;
   let totalPay = 0;
-  for (const monthKey of getMonthKeysForYear(year)) {
+  getMonthKeysForYear(year).forEach((monthKey, index) => {
     const month = database.months[monthKey];
     const summary = month ? summarizeMonth(month) : { activeDays: 0, totalHours: 0, averageHours: 0, totalPay: 0 };
     totalDays += summary.activeDays;
     totalHours += summary.totalHours;
     totalPay += summary.totalPay;
     rows.push([
+      index + 1,
       formatMonthKey(monthKey),
       summary.activeDays,
       summary.totalHours,
@@ -66,10 +87,10 @@ export function exportYearCsv(database, year, displayName = 'Teacher') {
       month?.hourlyRate ?? database.settings.defaultHourlyRate,
       summary.totalPay,
     ]);
-  }
+  });
   rows.push([]);
-  rows.push([`TOTAL ${year}`, totalDays, Math.round(totalHours * 100) / 100, '', '', Math.round(totalPay * 100) / 100]);
-  download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-annual-${year}.csv`);
+  rows.push([`TOTAL ${year}`, '', totalDays, Math.round(totalHours * 100) / 100, '', '', Math.round(totalPay * 100) / 100]);
+  download(csv(rows), 'text/csv;charset=utf-8', `${BRAND.slug}-annual-${year}.csv`);
 }
 
 export function exportBackup(database, profile = {}) {
@@ -77,10 +98,7 @@ export function exportBackup(database, profile = {}) {
     JSON.stringify({
       application: BRAND_TITLE,
       exportedAt: new Date().toISOString(),
-      profile: {
-        displayName: String(profile.displayName || ''),
-        email: String(profile.email || ''),
-      },
+      profile: { displayName: String(profile.displayName || ''), email: String(profile.email || '') },
       data: database,
     }, null, 2),
     'application/json',

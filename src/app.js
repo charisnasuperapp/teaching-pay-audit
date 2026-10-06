@@ -1,9 +1,11 @@
-import { BRAND, BRAND_DEVELOPER_CREDIT } from './brand.js';
+import { BRAND } from './brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth, validateEntry } from './lib/calculations.js';
 import { createDatabase, createMonth, ensureMonth, markMonthEdited, markSettingsEdited, mergeDatabases, sanitizeDatabase } from './lib/database.js';
 import { formatMonthKey, getMonthKeysForYear, getYear, shiftMonth, toMonthKey } from './lib/date.js';
 import { exportBackup, exportMonthCsv, exportYearCsv, readBackup } from './lib/export.js';
 import { exportMonthPdf, exportYearPdf } from './lib/pdf-report.js';
+import { exportMonthPng, exportYearPng } from './lib/report-image.js';
+import { exportMonthXlsx, exportYearXlsx } from './lib/xlsx-export.js';
 import { FirebaseRestClient, normalizeDisplayName } from './lib/firebase-rest.js';
 import { clearDatabase, loadDatabase, loadDatabaseOrNull, saveDatabase } from './lib/storage.js';
 import { assertCloudLogoutReady, assertNoPendingChanges, assertRevisionConfirmed } from './lib/logout-guard.js';
@@ -160,6 +162,34 @@ async function handleClick(event) {
     exportMonthCsv(currentMonth(), currentDisplayName());
   } else if (action === 'export-year-csv') {
     exportYearCsv(state.database, state.selectedYear, currentDisplayName());
+  } else if (action === 'export-month-xlsx') {
+    try {
+      await exportMonthXlsx(currentMonth(), currentDisplayName());
+      showToast('Professional Excel workbook downloaded successfully.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error), 'error');
+    }
+  } else if (action === 'export-year-xlsx') {
+    try {
+      await exportYearXlsx(state.database, state.selectedYear, currentDisplayName());
+      showToast('Annual Excel workbook downloaded successfully.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error), 'error');
+    }
+  } else if (action === 'export-month-png') {
+    try {
+      await exportMonthPng(currentMonth(), currentDisplayName());
+      showToast('Monthly PNG report downloaded successfully.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error), 'error');
+    }
+  } else if (action === 'export-year-png') {
+    try {
+      await exportYearPng(state.database, state.selectedYear, currentDisplayName());
+      showToast('Annual PNG report downloaded successfully.', 'success');
+    } catch (error) {
+      showToast(errorMessage(error), 'error');
+    }
   } else if (action === 'export-month-pdf') {
     try {
       exportMonthPdf(currentMonth(), currentDisplayName());
@@ -906,7 +936,7 @@ function render() {
       <main class="content">${main}</main>
       ${state.settingsOpen ? renderSettings() : ''}
       ${state.logoutDialogOpen ? renderLogoutDialog() : ''}
-      <footer class="app-footer"><span>${icon('signature', 14)} ${BRAND_DEVELOPER_CREDIT}</span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private account-based synchronization</span></footer>
+      <footer class="app-footer"><span class="footer-brand-symbol"><img src="/brand-mark.png" alt="" aria-hidden="true"></span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private account-based synchronization</span></footer>
     </div>`;
   scheduleAutoGrowTextareas();
 }
@@ -996,7 +1026,7 @@ function renderAuthScreen() {
           ${isReset ? `<button type="button" data-action="show-login">Back to sign in</button>` : isRegister ? `<span>Already have an account?</span><button type="button" data-action="show-login">Sign in</button>` : `<button type="button" data-action="show-reset">Forgot password?</button><span>New here?</span><button type="button" data-action="show-register">Create account</button>`}
         </div>
         <div class="auth-security-note">${icon('lock', 16)} <span>Your account stays signed in on this browser until you choose <strong>Save & Sign Out</strong>. On shared devices, always sign out when finished.</span></div>
-        <div class="auth-product-foot">Built for reliable day-to-day teaching pay records · ${escapeHtml(BRAND_DEVELOPER_CREDIT)}</div>
+        <div class="auth-product-foot"><img src="/brand-mark.png" alt="" aria-hidden="true"><span>Built for reliable day-to-day teaching pay records.</span></div>
       </div>
     </section>
   </main>`;
@@ -1034,7 +1064,9 @@ function renderMonthly() {
         <span id="audit-status" class="audit-status ${invalidCount ? 'warning' : 'clean'}">${invalidCount ? `${invalidCount} ${invalidCount === 1 ? 'row requires' : 'rows require'} review` : `${icon('check', 14)} Audit clear`}</span>
         <label class="rate-control">This month's rate <span>$</span><input data-month-rate="true" type="number" min="0" step="0.25" value="${month.hourlyRate || ''}" aria-label="Hourly rate for this month"></label>
         <button class="button secondary compact" data-action="export-csv">${icon('sheet', 17)} CSV</button>
-        <button class="button secondary compact" data-action="export-month-pdf">${icon('pdf', 17)} Download PDF</button>
+        <button class="button secondary compact" data-action="export-month-xlsx">${icon('excel', 17)} Excel</button>
+        <button class="button secondary compact" data-action="export-month-png">${icon('image', 17)} PNG</button>
+        <button class="button secondary compact" data-action="export-month-pdf">${icon('pdf', 17)} PDF</button>
       </div></div>
       <div class="table-wrapper"><table class="entry-table"><thead><tr><th class="date-column">Date</th><th>Class</th><th class="hours-column">Hours</th><th class="rate-column">Rate</th><th class="amount-column">Amount</th><th>Notes</th></tr></thead><tbody>
         ${Object.values(month.entries).map(renderEntryRow).join('')}
@@ -1064,7 +1096,7 @@ function renderYearly() {
 
   return `<section class="page-title-row"><div><span class="eyebrow">ANNUAL SUMMARY</span><h2>${state.selectedYear} Overview</h2><p>Compare teaching hours and earnings across every month.</p></div><div class="year-switcher"><button data-action="previous-year">${icon('left', 19)}</button><strong>${state.selectedYear}</strong><button data-action="next-year">${icon('right', 19)}</button></div></section>
     <section class="summary-grid yearly-summary">${summaryCard('calendar', 'Total Days', formatHours(total.days), 'teaching days this year')}${summaryCard('clock', 'Total Hours', `${formatHours(total.hours)} hours`, 'combined across 12 months')}${summaryCard('money', 'Total Earnings', formatCurrency(total.pay), 'total pay for the year')}</section>
-    <section class="data-card"><div class="card-toolbar"><div><h3>Monthly Breakdown</h3><p>Select a month to open its daily details.</p></div><div class="toolbar-actions"><button class="button secondary compact" data-action="export-year-csv">${icon('sheet', 17)} Annual CSV</button><button class="button secondary compact" data-action="export-year-pdf">${icon('pdf', 17)} Download Annual PDF</button></div></div><div class="table-wrapper"><table class="year-table"><thead><tr><th>Month</th><th>Teaching Days</th><th>Total Hours</th><th>Average/Day</th><th>Total Pay</th><th></th></tr></thead><tbody>
+    <section class="data-card"><div class="card-toolbar"><div><h3>Monthly Breakdown</h3><p>Select a month to open its daily details.</p></div><div class="toolbar-actions"><button class="button secondary compact" data-action="export-year-csv">${icon('sheet', 17)} CSV</button><button class="button secondary compact" data-action="export-year-xlsx">${icon('excel', 17)} Excel</button><button class="button secondary compact" data-action="export-year-png">${icon('image', 17)} PNG</button><button class="button secondary compact" data-action="export-year-pdf">${icon('pdf', 17)} PDF</button></div></div><div class="table-wrapper"><table class="year-table"><thead><tr><th>Month</th><th>Teaching Days</th><th>Total Hours</th><th>Average/Day</th><th>Total Pay</th><th></th></tr></thead><tbody>
       ${rows.map((row) => `<tr><td><strong>${formatMonthKey(row.monthKey)}</strong></td><td>${row.activeDays}</td><td>${formatHours(row.totalHours)}</td><td>${formatHours(row.averageHours)}</td><td class="amount-cell">${formatCurrency(row.totalPay)}</td><td><button class="text-button" data-action="open-month" data-month="${row.monthKey}">Open</button></td></tr>`).join('')}
     </tbody><tfoot><tr><td>TOTAL ${state.selectedYear}</td><td>${total.days}</td><td>${formatHours(total.hours)}</td><td></td><td>${formatCurrency(total.pay)}</td><td></td></tr></tfoot></table></div></section>`;
 }
@@ -1110,7 +1142,7 @@ function renderSettings() {
 
       <section class="settings-section about-settings-section">
         <div class="section-heading">${icon('signature', 20)}<div><h3>About</h3><p>Production workspace information.</p></div></div>
-        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.1.0')}</strong></div><div><span>Developer</span><strong>${escapeHtml(BRAND.developerName)}</strong></div></div>
+        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.2.0')}</strong></div><div><span>Workspace</span><strong>Private & synchronized</strong></div></div>
       </section>
 
       <section class="settings-section danger-zone"><div class="section-heading">${icon('trash', 20)}<div><h3>Danger zone</h3><p>Only the currently selected month's teaching entries will be cleared.</p></div></div><button class="button danger-outline" data-action="clear-month">${icon('trash', 17)} Clear this month</button></section>
@@ -1275,6 +1307,8 @@ function icon(name, size = 20) {
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13Z"/><path d="M8 8h8M8 12h6"/>',
     sheet: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8M10 9H8"/>',
+    excel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8l4 8M12 8l-4 8M15 8h3M15 12h3M15 16h3"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
     print: '<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/>',
     pdf: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 15h2.4a1.6 1.6 0 0 0 0-3.2H8V17"/><path d="M14 11.8V17h1.5a2.6 2.6 0 0 0 0-5.2H14z"/>',
     check: '<path d="m5 12 4 4L19 6"/>', warning: '<path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',

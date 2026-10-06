@@ -2,6 +2,7 @@ import { BRAND, BRAND_TITLE } from '../brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth } from './calculations.js';
 import { formatMonthKey, getMonthKeysForYear } from './date.js';
 import { PdfDocument, PDF_PAGE, downloadPdf, wrapText } from './pdf-core.js';
+import { BRAND_MARK_JPEG } from './brand-art.js';
 
 const REPORT_LOCALE = 'en-US';
 const COLORS = Object.freeze({
@@ -55,7 +56,8 @@ export function buildMonthReportPdf(month, teacherName, generatedAt = new Date()
     title: `Monthly Teaching Pay Report - ${model.periodLabel}`,
     author: BRAND.appName,
   });
-  renderMonthReport(document, model);
+  const brandMark = document.registerJpegImage('BrandMark', BRAND_MARK_JPEG);
+  renderMonthReport(document, model, brandMark);
   return document.toUint8Array();
 }
 
@@ -66,7 +68,8 @@ export function buildYearReportPdf(database, year, teacherName = 'Teacher', gene
     title: `Annual Teaching Pay Report - ${year}`,
     author: BRAND.appName,
   });
-  renderYearReport(document, model);
+  const brandMark = document.registerJpegImage('BrandMark', BRAND_MARK_JPEG);
+  renderYearReport(document, model, brandMark);
   return document.toUint8Array();
 }
 
@@ -135,7 +138,7 @@ export function createYearReportModel(database, year, teacherName = 'Teacher', g
   };
 }
 
-function renderMonthReport(document, model) {
+function renderMonthReport(document, model, brandMark) {
   const margin = 42;
   const footerHeight = 31;
   const bottomLimit = footerHeight + 30;
@@ -147,6 +150,7 @@ function renderMonthReport(document, model) {
   const addPage = (continuation = false) => {
     page = document.addPage();
     pages.push(page);
+    drawWatermark(page, brandMark);
     y = drawReportHeader(page, {
       margin,
       reportType: 'Monthly Teaching Pay Report',
@@ -157,8 +161,8 @@ function renderMonthReport(document, model) {
     if (!continuation) {
       y = drawMonthlyIntroduction(page, model, margin, y);
     } else {
-      page.text('DAILY HOURS AND EARNINGS - CONTINUED', margin, y - 7, { size: 8.5, bold: true, color: COLORS.primaryDark });
-      y -= 22;
+      page.text('DAILY HOURS AND EARNINGS - CONTINUED', margin, y - 5, { size: 8, bold: true, color: COLORS.primaryDark });
+      y -= 21;
     }
     y = drawTableHeader(page, MONTHLY_COLUMNS, margin, y);
   };
@@ -180,13 +184,11 @@ function renderMonthReport(document, model) {
   }
 
   const totalHeight = 31;
-  const signatureHeight = 102;
-  if (y - totalHeight - signatureHeight < bottomLimit) {
-    addPage(true);
-  }
+  const signatureHeight = 104;
+  if (y - totalHeight - signatureHeight < bottomLimit) addPage(true);
   drawMonthlyTotal(page, model, margin, y, totalHeight);
   y -= totalHeight;
-  drawSignatureSection(page, model.teacherName, margin, y - 24);
+  drawSignatureSection(page, model.teacherName, margin, y - 29);
 
   addPageFooters(pages, {
     leftText: BRAND_TITLE,
@@ -195,9 +197,10 @@ function renderMonthReport(document, model) {
   });
 }
 
-function renderYearReport(document, model) {
+function renderYearReport(document, model, brandMark) {
   const margin = 42;
   const page = document.addPage();
+  drawWatermark(page, brandMark, { scale: 0.40, opacity: 0.04 });
   let y = drawReportHeader(page, {
     margin,
     reportType: 'Annual Teaching Pay Report',
@@ -234,56 +237,76 @@ function renderYearReport(document, model) {
   });
 }
 
+function drawWatermark(page, brandMark, { scale = 0.52, opacity = 0.045 } = {}) {
+  if (!brandMark) return;
+  const size = Math.min(page.width, page.height) * scale;
+  const x = (page.width - size) / 2;
+  const y = (page.height - size) / 2 - 6;
+  page.drawImage(brandMark, x, y, size, size, { opacity });
+}
+
 function drawReportHeader(page, { margin, reportType, periodLabel, continuation }) {
-  const pageTop = page.height - 18;
+  const top = page.height - 22;
   page.fillRect(0, page.height - 7, page.width, 7, COLORS.primary);
 
-  const markSize = 36;
-  const markY = pageTop - markSize - 17;
+  const markSize = 34;
+  const markY = top - markSize - 10;
   page.fillRect(margin, markY, markSize, markSize, COLORS.primary);
-  page.text('$', margin + markSize / 2, markY + 10, { size: 21, bold: true, color: COLORS.white, align: 'center' });
+  page.text('$', margin + markSize / 2, markY + 9.5, { size: 20, bold: true, color: COLORS.white, align: 'center' });
 
-  page.text(BRAND.appName.toUpperCase(), margin + 48, markY + 27, { size: 8, bold: true, color: COLORS.primary });
-  page.text(BRAND.productName, margin + 48, markY + 11, { size: 16, bold: true, color: COLORS.ink });
-  page.text('Teaching hours and earnings record', margin + 48, markY - 1, { size: 7.5, color: COLORS.muted });
+  const leftX = margin + markSize + 13;
+  const rightX = page.width - margin;
+  const availableLeft = Math.max(220, page.width * 0.56);
+  page.text(BRAND.appName.toUpperCase(), leftX, markY + 25, { size: 7.2, bold: true, color: COLORS.primary });
+  page.text(reportType, leftX, markY + 10.5, { size: 14.2, bold: true, color: COLORS.ink, maxWidth: availableLeft });
+  page.text('Teaching hours and earnings record', leftX, markY - 1, { size: 7.2, color: COLORS.muted, maxWidth: availableLeft });
 
-  page.text(reportType.toUpperCase(), page.width - margin, markY + 26, { size: 7.5, bold: true, color: COLORS.muted, align: 'right' });
-  page.text(periodLabel, page.width - margin, markY + 8, { size: 16, bold: true, color: COLORS.primaryDark, align: 'right' });
-  if (continuation) page.text('CONTINUED', page.width - margin, markY - 4, { size: 7, bold: true, color: COLORS.accent, align: 'right' });
+  page.text('REPORTING PERIOD', rightX, markY + 24, { size: 6.5, bold: true, color: COLORS.muted, align: 'right' });
+  page.text(periodLabel, rightX, markY + 8.5, { size: 13.5, bold: true, color: COLORS.primaryDark, align: 'right', maxWidth: page.width * 0.30 });
+  if (continuation) page.text('CONTINUED', rightX, markY - 2, { size: 6.5, bold: true, color: COLORS.accent, align: 'right' });
 
-  const dividerY = markY - 15;
+  const dividerY = markY - 16;
   page.line(margin, dividerY, page.width - margin, dividerY, { color: COLORS.line, lineWidth: 0.8 });
-  return dividerY - 22;
+  return dividerY - 20;
 }
 
 function drawMonthlyIntroduction(page, model, margin, y) {
-  page.text('OFFICIAL PAY RECORD', margin, y, { size: 7.5, bold: true, color: COLORS.primary });
-  page.text('Daily Teaching Hours and Earnings', margin, y - 24, { size: 20, bold: true, color: COLORS.ink });
-  page.text('A clear record of teaching activity and calculated pay for the selected month.', margin, y - 42, { size: 8.5, color: COLORS.muted });
+  page.text('MONTHLY PAY RECORD', margin, y, { size: 7.2, bold: true, color: COLORS.primary });
+  page.text('Daily Teaching Hours and Earnings', margin, y - 21, { size: 18, bold: true, color: COLORS.ink, maxWidth: page.width - margin * 2 });
+  page.text('Teaching activity and calculated earnings for the selected reporting period.', margin, y - 38, { size: 8, color: COLORS.muted, maxWidth: page.width - margin * 2 });
 
-  const statusWidth = 112;
-  const statusHeight = 42;
-  const statusX = page.width - margin - statusWidth;
-  const statusY = y - 47;
-  page.fillRect(statusX, statusY, statusWidth, statusHeight, COLORS.primarySoft);
-  page.strokeRect(statusX, statusY, statusWidth, statusHeight, { color: [0.78, 0.83, 1], lineWidth: 0.7 });
-  page.text('DOCUMENT STATUS', statusX + 10, statusY + 29, { size: 6.5, bold: true, color: COLORS.muted });
-  page.text('RECORDED', statusX + 10, statusY + 15, { size: 11, bold: true, color: COLORS.success });
-  page.text(`Generated from ${BRAND.appName}`, statusX + 10, statusY + 6, { size: 6.5, color: COLORS.muted });
-
-  const cardsTop = y - 69;
-  drawMetaCards(page, [
+  const cardsTop = y - 55;
+  drawMetaGrid(page, [
     ['Teacher', model.teacherName],
     ['Reporting Period', model.periodLabel],
     ['Hourly Rate', `${formatCurrency(model.hourlyRate)} / hour`],
     ['Generated On', model.generatedLabel],
   ], margin, cardsTop, page.width - margin * 2);
 
-  const sectionY = cardsTop - 58;
-  page.text('TEACHING ACTIVITY DETAILS', margin, sectionY, { size: 7.5, bold: true, color: COLORS.primary });
-  page.text('Daily Hours and Earnings', margin, sectionY - 17, { size: 12.5, bold: true, color: COLORS.ink });
-  page.text(`${model.entries.length} ${model.entries.length === 1 ? 'entry' : 'entries'}`, page.width - margin, sectionY - 14, { size: 7.5, bold: true, color: COLORS.primaryDark, align: 'right' });
-  return sectionY - 29;
+  const sectionY = cardsTop - 84;
+  page.text('TEACHING ACTIVITY DETAILS', margin, sectionY, { size: 7.2, bold: true, color: COLORS.primary });
+  page.text('Daily Hours and Earnings', margin, sectionY - 16, { size: 12, bold: true, color: COLORS.ink });
+  page.text(`${model.entries.length} ${model.entries.length === 1 ? 'entry' : 'entries'}`, page.width - margin, sectionY - 14, { size: 7.2, bold: true, color: COLORS.primaryDark, align: 'right' });
+  return sectionY - 27;
+}
+
+function drawMetaGrid(page, items, x, topY, totalWidthValue) {
+  const gapX = 9;
+  const gapY = 8;
+  const cardWidth = (totalWidthValue - gapX) / 2;
+  const cardHeight = 32;
+  items.forEach(([label, value], index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const cardX = x + column * (cardWidth + gapX);
+    const cardTop = topY - row * (cardHeight + gapY);
+    const cardY = cardTop - cardHeight;
+    page.fillRect(cardX, cardY, cardWidth, cardHeight, COLORS.soft);
+    page.strokeRect(cardX, cardY, cardWidth, cardHeight, { color: COLORS.line, lineWidth: 0.65 });
+    page.text(label.toUpperCase(), cardX + 9, cardY + 20.5, { size: 5.9, bold: true, color: COLORS.muted, maxWidth: cardWidth - 18 });
+    const valueLines = wrapText(value, cardWidth - 18, 7.8, true, 1);
+    page.text(valueLines[0] || '-', cardX + 9, cardY + 8.5, { size: 7.8, bold: true, color: COLORS.ink, maxWidth: cardWidth - 18 });
+  });
 }
 
 function drawAnnualIntroduction(page, model, margin, y) {

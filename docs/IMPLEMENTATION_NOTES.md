@@ -2,46 +2,40 @@
 
 ## Architecture
 
-Teaching Pay Audit is a static Progressive Web App deployed on Vercel. Firebase provides Email/Password Authentication and private Firestore persistence. No custom application server or paid cloud service is required.
+Teaching Pay Audit remains a static offline-first application deployed to Vercel and synchronized with Firebase Authentication + Firestore on the Spark plan.
 
-## Identity
+## Reporting modules
 
-Product identity is static in `src/brand.js`. User identity is dynamic and comes from Firestore profile data.
+- `src/lib/pdf-core.js` - local PDF writer with fonts, transparent graphics state, and embedded JPEG image resources.
+- `src/lib/pdf-report.js` - monthly and annual PDF layout.
+- `src/lib/report-image.js` - Canvas-based PNG report renderer.
+- `src/lib/xlsx-export.js` - dependency-free OOXML/XLSX generator, ZIP container writer, workbook styling, formulas, analytics data, and embedded chart image.
+- `src/lib/export.js` - CSV and JSON backup output.
+- `src/lib/brand-art.js` - embedded report watermark image data.
+- `src/brand-mark.png` - runtime white-label visual mark.
 
-Registration sequence:
+## Excel design
 
-1. Validate name, email, password, and confirmation.
-2. Require at least 8 password characters in the UI/application layer.
-3. Create Firebase Email/Password account.
-4. Save `users/{uid}/profile/account`.
-5. Activate the user-scoped local database.
-6. Merge local/cloud salary data.
-7. Synchronize the latest account snapshot.
+The XLSX generator intentionally avoids remote CDN dependencies so exports continue to work offline after the PWA has cached the application.
 
-## Password changes
+Monthly workbooks:
 
-Settings provides an Account security form with current password, new password, and confirmation.
+1. Summary
+2. Daily Details
+3. Analytics
 
-The client does not blindly update a password from an existing long-lived session. It reauthenticates the current account with the supplied current password, then sends the new password using a fresh Firebase ID token. The returned tokens replace the existing local session so the user can continue working without unnecessary logout.
+Annual workbooks:
 
-## Offline-first model
+1. Summary
+2. Monthly Breakdown
+3. Analytics
 
-Salary edits are stored locally first. Cloud changes are queued and normally sent roughly 250 ms after editing stops. When offline, local data remains usable and pending changes are retried after connectivity returns.
+Totals use formulas where appropriate. Analytics charts are rendered locally to PNG and embedded into the XLSX drawing layer.
 
-## Profile synchronization
+## White-label behavior
 
-The canonical display name is stored in the profile document. A mirrored name and profile revision are stored in salary metadata so an already-open second device can update its visible name through the existing cloud revision polling without an additional high-frequency profile read.
+No personal developer name is displayed in the runtime interface. The supplied visual mark is used in the footer and reports instead.
 
-## Safe sign-out
+## Compatibility
 
-Sign-out is cancelled if the app cannot:
-
-1. Save local data.
-2. Flush pending cloud writes.
-3. Fetch the remote snapshot.
-4. Upload the merged snapshot.
-5. Confirm the final cloud revision.
-
-## PDF
-
-PDFs are generated directly in-browser using the local PDF engine. No third-party PDF service is used.
+The application remains responsive on Android phone/tablet, Windows desktop, and modern web browsers. Report generation relies only on standard browser APIs and locally bundled code.
