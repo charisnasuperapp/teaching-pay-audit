@@ -59,7 +59,8 @@ test('the dashboard remains protected until sign-in and the English sign-in scre
 
   assert.match(root.innerHTML, /Welcome back/);
   assert.match(root.innerHTML, /Teaching Pay Audit/);
-  assert.match(root.innerHTML, /Your name personalizes every report/);
+  assert.match(root.innerHTML, /Professional reports/);
+  assert.match(root.innerHTML, /Automatic cloud sync/);
   assert.match(root.innerHTML, /Create account/);
   assert.doesNotMatch(root.innerHTML, /MONTHLY REPORT/);
 });

@@ -224,3 +224,52 @@ test('profile name is stored under the signed-in UID and loaded back for persona
     globalThis.fetch = previousFetch;
   }
 });
+
+test('change password reauthenticates with the current password and refreshes the session', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  const calls = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), body: options.body || '' });
+    if (String(url).includes('accounts:signInWithPassword')) {
+      const body = JSON.parse(options.body || '{}');
+      return jsonResponse(200, {
+        localId: 'secure-user',
+        email: body.email || 'owner@example.com',
+        idToken: body.password === 'old-password' ? 'reauth-token' : 'initial-token',
+        refreshToken: body.password === 'old-password' ? 'reauth-refresh' : 'initial-refresh',
+        expiresIn: '3600',
+      });
+    }
+    if (String(url).includes('accounts:update')) {
+      const body = JSON.parse(options.body || '{}');
+      assert.equal(body.idToken, 'reauth-token');
+      assert.equal(body.password, 'new-password-123');
+      return jsonResponse(200, {
+        localId: 'secure-user',
+        email: 'owner@example.com',
+        idToken: 'updated-token',
+        refreshToken: 'updated-refresh',
+        expiresIn: '3600',
+      });
+    }
+    return jsonResponse(500, { error: { message: 'UNEXPECTED' } });
+  };
+
+  try {
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    await client.signIn('owner@example.com', 'initial-password');
+    const updated = await client.changePassword('old-password', 'new-password-123');
+
+    assert.equal(updated.uid, 'secure-user');
+    assert.equal(updated.idToken, 'updated-token');
+    assert.equal(client.authenticated, true);
+    assert.equal(calls.filter((call) => call.url.includes('accounts:signInWithPassword')).length, 2);
+    assert.equal(calls.filter((call) => call.url.includes('accounts:update')).length, 1);
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});

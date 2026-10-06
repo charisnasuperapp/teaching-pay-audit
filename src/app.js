@@ -209,6 +209,12 @@ async function handleSubmit(event) {
     return;
   }
 
+  if (form.dataset.passwordForm === 'true') {
+    event.preventDefault();
+    await handlePasswordChangeSubmit(form);
+    return;
+  }
+
   if (!form.dataset.authForm) return;
   event.preventDefault();
 
@@ -236,6 +242,7 @@ async function handleSubmit(event) {
     if (isRegister) {
       if (!displayName) throw new Error('Enter your name.');
       if (displayName.length < 2) throw new Error('Your name must contain at least 2 characters.');
+      if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
       if (password !== confirmPassword) throw new Error('Password confirmation does not match.');
     }
 
@@ -300,6 +307,48 @@ async function handleProfileSubmit(form) {
     await saveDatabase(state.database, state.localScope);
     await flushCloudChanges({ immediate: true, throwOnError: true });
     showToast('Profile name updated successfully.', 'success');
+  } catch (error) {
+    showToast(errorMessage(error), 'error');
+  } finally {
+    state.busy = false;
+    render();
+  }
+}
+
+
+async function handlePasswordChangeSubmit(form) {
+  if (!cloud.authenticated || !state.currentUser) {
+    showToast('Sign in again before changing your password.', 'error');
+    return;
+  }
+
+  const formData = new FormData(form);
+  const currentPassword = String(formData.get('currentPassword') || '');
+  const newPassword = String(formData.get('newPassword') || '');
+  const confirmPassword = String(formData.get('confirmNewPassword') || '');
+
+  if (!currentPassword) {
+    showToast('Enter your current password.', 'error');
+    return;
+  }
+  if (newPassword.length < 8) {
+    showToast('Use at least 8 characters for your new password.', 'error');
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('New password confirmation does not match.', 'error');
+    return;
+  }
+  if (currentPassword === newPassword) {
+    showToast('Choose a new password that is different from your current password.', 'error');
+    return;
+  }
+
+  state.busy = true;
+  render();
+  try {
+    await cloud.changePassword(currentPassword, newPassword);
+    showToast('Password updated successfully. Your current session remains active.', 'success');
   } catch (error) {
     showToast(errorMessage(error), 'error');
   } finally {
@@ -875,30 +924,81 @@ function renderAuthScreen() {
   const isReset = state.authMode === 'reset';
   const title = isRegister ? 'Create your workspace' : isReset ? 'Recover account access' : 'Welcome back';
   const description = isRegister
-    ? 'Create your account once. Your name will personalize the dashboard, reports, PDF exports, and every device where you sign in.'
+    ? 'Create one secure account for your teaching records. Your name personalizes the dashboard, reports, exports, and every device where you sign in.'
     : isReset
-      ? 'A password recovery link will be sent to your registered email address.'
-      : 'Sign in to access your teaching hours, earnings, reports, and synchronized workspace.';
+      ? 'Enter your registered email address and we will send you a password recovery link.'
+      : 'Sign in to access your teaching hours, earnings, professional reports, and synchronized workspace.';
   const passwordType = state.passwordVisible ? 'text' : 'password';
   const submitLabel = isRegister ? 'Create account' : isReset ? 'Send reset link' : 'Sign in';
 
   return `<main class="auth-shell">
-    <section class="auth-showcase"><div class="showcase-content"><div class="auth-brand inverse"><div class="auth-logo">${icon('money', 34)}</div><div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div></div><div class="creator-badge">${icon('shield', 16)} <span>SECURE PERSONAL WORKSPACE</span></div><span class="showcase-eyebrow">ONE ACCOUNT · ALL YOUR DEVICES</span><h2>Your teaching records.<br>Your earnings. Always in sync.</h2><p>Track teaching hours, calculate pay automatically, keep monthly and annual records, and open the same private workspace from any browser or device.</p><div class="showcase-features"><span>${icon('user-plus', 18)} Your name personalizes every report</span><span>${icon('refresh', 18)} Changes synchronize automatically</span><span>${icon('shield', 18)} Every account has isolated private data</span></div><div class="showcase-status-card"><div><span>WORKSPACE</span><strong>Offline-first & cloud synced</strong></div><div class="status-orb"><i></i> Ready</div></div></div></section>
-    <section class="auth-panel"><div class="auth-panel-inner"><div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.appName)}</strong><span>Teaching hours & pay</span></div></div><div class="mobile-creator-note">${icon('shield', 16)} Private data for each signed-in account.</div><span class="eyebrow">ACCOUNT ACCESS</span><h2>${title}</h2><p class="auth-description">${description}</p>
-      ${state.authError ? `<div class="auth-alert error">${icon('warning', 18)}<span>${escapeHtml(state.authError)}</span></div>` : ''}
-      ${state.authNotice ? `<div class="auth-alert success">${icon('check', 18)}<span>${escapeHtml(state.authNotice)}</span></div>` : ''}
-      <form class="auth-form" data-auth-form="${isReset ? 'reset' : isRegister ? 'register' : 'login'}">
-        ${isRegister ? `<label>Your Name<input name="displayName" type="text" autocomplete="name" required minlength="2" maxlength="80" value="${escapeAttribute(state.authDisplayName)}" placeholder="Example: Ipul"></label><div class="field-help">This name appears in your dashboard, PDF reports, exports, and profile.</div>` : ''}
-        <label>Email<input name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" value="${escapeAttribute(state.authEmail)}" placeholder="name@example.com"></label>
-        ${isReset ? '' : `<label>Password<div class="password-field"><input name="password" type="${passwordType}" autocomplete="${isRegister ? 'new-password' : 'current-password'}" required minlength="6" maxlength="4096" placeholder="At least 6 characters"><button type="button" data-action="toggle-password" aria-label="${state.passwordVisible ? 'Hide' : 'Show'} password">${icon(state.passwordVisible ? 'eye-off' : 'eye', 18)}</button></div></label>`}
-        ${isRegister ? `<label>Confirm Password<input name="confirmPassword" type="${passwordType}" autocomplete="new-password" required minlength="6" maxlength="4096" placeholder="Re-enter your password"></label>` : ''}
-        <button class="button primary auth-submit" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? '<span class="spinner"></span> Processing...' : `${icon(isReset ? 'mail' : isRegister ? 'user-plus' : 'login', 18)} ${submitLabel}`}</button>
-      </form>
-      <div class="auth-links">
-        ${isReset ? `<button type="button" data-action="show-login">Back to sign in</button>` : isRegister ? `<span>Already have an account?</span><button type="button" data-action="show-login">Sign in</button>` : `<button type="button" data-action="show-reset">Forgot password?</button><span>New here?</span><button type="button" data-action="show-register">Create account</button>`}
+    <section class="auth-showcase">
+      <div class="showcase-content">
+        <div class="auth-brand inverse">
+          <div class="auth-logo">${icon('money', 34)}</div>
+          <div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div>
+        </div>
+
+        <div class="creator-badge">${icon('shield', 16)} <span>PROFESSIONAL WORKSPACE FOR EDUCATORS</span></div>
+        <span class="showcase-eyebrow">TEACHING HOURS · PAY · REPORTS</span>
+        <h2>Track teaching hours.<br>Calculate earnings.<br>Stay synced everywhere.</h2>
+        <p>A reliable workspace for teachers, tutors, and hourly instructors to record sessions, calculate pay automatically, export professional reports, and securely access the same private data across devices.</p>
+
+        <div class="showcase-features">
+          <article class="showcase-feature-card">
+            <div>${icon('clock', 19)}</div><strong>Automatic pay tracking</strong><span>Record hours once and let the workspace calculate earnings instantly.</span>
+          </article>
+          <article class="showcase-feature-card">
+            <div>${icon('pdf', 19)}</div><strong>Professional reports</strong><span>Download polished monthly and annual PDF reports plus CSV exports.</span>
+          </article>
+          <article class="showcase-feature-card">
+            <div>${icon('shield', 19)}</div><strong>Private by account</strong><span>Each account has isolated records protected by secure Firebase authentication.</span>
+          </article>
+        </div>
+
+        <div class="showcase-trust-row">
+          <span>${icon('save', 15)} Offline-first saving</span>
+          <span>${icon('refresh', 15)} Automatic cloud sync</span>
+          <span>${icon('database', 15)} Cross-device access</span>
+        </div>
+
+        <div class="showcase-status-card">
+          <div><span>WORKSPACE STATUS</span><strong>Local-first reliability with secure cloud synchronization</strong></div>
+          <div class="status-orb"><i></i> Ready</div>
+        </div>
       </div>
-      <div class="auth-security-note">${icon('lock', 16)} Your session stays signed in on this browser until you choose Sign Out. On shared devices, always use Save & Sign Out.</div>
-    </div></section>
+    </section>
+
+    <section class="auth-panel">
+      <div class="auth-panel-inner">
+        <div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.appName)}</strong><span>Professional teaching hours & pay workspace</span></div></div>
+        <div class="mobile-creator-note">${icon('shield', 16)} Private, account-based data with automatic synchronization.</div>
+        <span class="eyebrow">SECURE ACCOUNT ACCESS</span>
+        <h2>${title}</h2>
+        <p class="auth-description">${description}</p>
+
+        <div class="auth-value-strip">
+          <span>${icon('shield-check', 15)} Private data</span>
+          <span>${icon('refresh', 15)} Auto sync</span>
+          <span>${icon('pdf', 15)} PDF reports</span>
+        </div>
+
+        ${state.authError ? `<div class="auth-alert error">${icon('warning', 18)}<span>${escapeHtml(state.authError)}</span></div>` : ''}
+        ${state.authNotice ? `<div class="auth-alert success">${icon('check', 18)}<span>${escapeHtml(state.authNotice)}</span></div>` : ''}
+        <form class="auth-form" data-auth-form="${isReset ? 'reset' : isRegister ? 'register' : 'login'}">
+          ${isRegister ? `<label>Your Name<input name="displayName" type="text" autocomplete="name" required minlength="2" maxlength="80" value="${escapeAttribute(state.authDisplayName)}" placeholder="Example: Ipul"></label><div class="field-help">Used to personalize your dashboard, PDF reports, exports, and profile.</div>` : ''}
+          <label>Email<input name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" value="${escapeAttribute(state.authEmail)}" placeholder="name@example.com"></label>
+          ${isReset ? '' : `<label>Password<div class="password-field"><input name="password" type="${passwordType}" autocomplete="${isRegister ? 'new-password' : 'current-password'}" required minlength="8" maxlength="4096" placeholder="At least 8 characters"><button type="button" data-action="toggle-password" aria-label="${state.passwordVisible ? 'Hide' : 'Show'} password">${icon(state.passwordVisible ? 'eye-off' : 'eye', 18)}</button></div></label>`}
+          ${isRegister ? `<label>Confirm Password<input name="confirmPassword" type="${passwordType}" autocomplete="new-password" required minlength="8" maxlength="4096" placeholder="Re-enter your password"></label>` : ''}
+          <button class="button primary auth-submit" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? '<span class="spinner"></span> Processing...' : `${icon(isReset ? 'mail' : isRegister ? 'user-plus' : 'login', 18)} ${submitLabel}`}</button>
+        </form>
+        <div class="auth-links">
+          ${isReset ? `<button type="button" data-action="show-login">Back to sign in</button>` : isRegister ? `<span>Already have an account?</span><button type="button" data-action="show-login">Sign in</button>` : `<button type="button" data-action="show-reset">Forgot password?</button><span>New here?</span><button type="button" data-action="show-register">Create account</button>`}
+        </div>
+        <div class="auth-security-note">${icon('lock', 16)} <span>Your account stays signed in on this browser until you choose <strong>Save & Sign Out</strong>. On shared devices, always sign out when finished.</span></div>
+        <div class="auth-product-foot">Built for reliable day-to-day teaching pay records · ${escapeHtml(BRAND_DEVELOPER_CREDIT)}</div>
+      </div>
+    </section>
   </main>`;
 }
 
@@ -973,22 +1073,47 @@ function renderSettings() {
   const name = currentDisplayName();
   const email = state.currentUser?.email || cloud.user?.email || '';
   return `<div class="drawer-backdrop" data-backdrop="true"><aside class="settings-drawer" aria-label="Settings">
-    <div class="drawer-header"><div><h2>Settings</h2><p>Profile, rates, backup, and synchronization.</p></div><button class="icon-button" data-action="close-settings">${icon('close', 21)}</button></div>
+    <div class="drawer-header"><div><span class="eyebrow">ACCOUNT & WORKSPACE</span><h2>Settings</h2><p>Manage your profile, security, pay preferences, backups, and synchronization.</p></div><button class="icon-button" data-action="close-settings" aria-label="Close settings">${icon('close', 21)}</button></div>
     <div class="drawer-content">
-      <section class="settings-section"><div class="section-heading">${icon('user', 20)}<div><h3>Your profile</h3><p>Your name is used throughout the workspace and in professional reports.</p></div></div>
+      <section class="settings-section">
+        <div class="section-heading">${icon('user', 20)}<div><h3>Your profile</h3><p>Your name personalizes the workspace and appears in professional reports.</p></div></div>
         <form class="profile-form" data-profile-form="true">
           <label class="field-label">Your name<input name="displayName" value="${escapeAttribute(name)}" placeholder="Full name" required minlength="2" maxlength="80" autocomplete="name"></label>
-          <label class="field-label">Email<input value="${escapeAttribute(email)}" readonly disabled></label>
+          <label class="field-label">Account email<input value="${escapeAttribute(email)}" readonly disabled></label>
           <button class="button secondary" type="submit" ${state.busy ? 'disabled' : ''}>${icon('save', 17)} Save profile name</button>
         </form>
       </section>
-      <section class="settings-section"><div class="section-heading">${icon('money', 20)}<div><h3>Pay settings</h3><p>The default rate is used when a new month is created.</p></div></div>
-        <label class="field-label">Default hourly rate (USD)<input data-setting="defaultHourlyRate" type="number" min="0" step="0.25" value="${state.database.settings.defaultHourlyRate || ''}"></label>
-        <div class="notice-box subtle">Changing the default rate does not modify previous months. Update the current month's rate from the Monthly page.</div>
+
+      <section class="settings-section security-settings-section">
+        <div class="section-heading">${icon('lock', 20)}<div><h3>Account security</h3><p>Change your password without leaving the workspace.</p></div></div>
+        <form class="password-change-form" data-password-form="true">
+          <label class="field-label">Current password<input name="currentPassword" type="password" autocomplete="current-password" required maxlength="4096" placeholder="Enter your current password"></label>
+          <label class="field-label">New password<input name="newPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="4096" placeholder="At least 8 characters"></label>
+          <label class="field-label">Confirm new password<input name="confirmNewPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="4096" placeholder="Re-enter your new password"></label>
+          <div class="password-requirements">${icon('shield-check', 16)} <span>Use at least 8 characters. Your current password is verified before any change is applied.</span></div>
+          <button class="button secondary security-action-button" type="submit" ${state.busy ? 'disabled' : ''}>${icon('lock', 17)} Update password</button>
+        </form>
       </section>
-      <section class="settings-section"><div class="section-heading">${icon('shield', 20)}<div><h3>Backup and restore</h3><p>Save a copy of your data regularly.</p></div></div><div class="button-grid"><button class="button secondary" data-action="backup">${icon('download', 17)} Download JSON backup</button><button class="button secondary" data-action="restore">${icon('upload', 17)} Restore backup</button></div></section>
+
+      <section class="settings-section">
+        <div class="section-heading">${icon('money', 20)}<div><h3>Pay settings</h3><p>The default hourly rate is applied when a new month is created.</p></div></div>
+        <label class="field-label">Default hourly rate (USD)<input data-setting="defaultHourlyRate" type="number" min="0" step="0.25" value="${state.database.settings.defaultHourlyRate || ''}"></label>
+        <div class="notice-box subtle">Changing the default rate does not modify previous months. Update the active month's rate directly from the Monthly page.</div>
+      </section>
+
+      <section class="settings-section">
+        <div class="section-heading">${icon('database', 20)}<div><h3>Data & backup</h3><p>Keep a portable copy of your records in addition to automatic cloud synchronization.</p></div></div>
+        <div class="button-grid"><button class="button secondary" data-action="backup">${icon('download', 17)} Download JSON backup</button><button class="button secondary" data-action="restore">${icon('upload', 17)} Restore backup</button></div>
+      </section>
+
       ${renderCloudSettings()}
-      <section class="settings-section danger-zone"><div class="section-heading">${icon('trash', 20)}<div><h3>Danger zone</h3><p>Only the currently selected month's data will be deleted.</p></div></div><button class="button danger-outline" data-action="clear-month">${icon('trash', 17)} Clear this month</button></section>
+
+      <section class="settings-section about-settings-section">
+        <div class="section-heading">${icon('signature', 20)}<div><h3>About</h3><p>Production workspace information.</p></div></div>
+        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.1.0')}</strong></div><div><span>Developer</span><strong>${escapeHtml(BRAND.developerName)}</strong></div></div>
+      </section>
+
+      <section class="settings-section danger-zone"><div class="section-heading">${icon('trash', 20)}<div><h3>Danger zone</h3><p>Only the currently selected month's teaching entries will be cleared.</p></div></div><button class="button danger-outline" data-action="clear-month">${icon('trash', 17)} Clear this month</button></section>
     </div>
     <div class="drawer-footer"><div>${icon('save', 16)}<span>Saved automatically</span></div><button class="button primary" data-action="close-settings">Done</button></div>
   </aside></div>`;

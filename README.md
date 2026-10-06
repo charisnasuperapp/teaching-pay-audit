@@ -1,30 +1,20 @@
-# Teaching Pay Audit v2.0.0
+# Teaching Pay Audit v2.1.0
 
-Teaching Pay Audit is a multi-user, offline-first web application for teachers and hourly instructors to record teaching activity, calculate pay, synchronize data across devices, and export professional monthly and annual reports.
-
-## Multi-user model
-
-The application is customer-neutral. Every user creates an account with:
-
-- Your Name
-- Email
-- Password
-- Password confirmation
-
-The user's name is stored in their private Firestore profile and automatically personalizes the dashboard, Settings, monthly/annual PDF reports, CSV exports, and backup metadata. Users sharing the same deployment do not share salary data; all records are isolated by Firebase Authentication UID.
+Teaching Pay Audit is a multi-user, offline-first web application for teachers, tutors, and hourly instructors to record teaching activity, calculate pay, synchronize private account data across devices, and export professional reports.
 
 ## Core features
 
 - Public Email/Password sign-up and sign-in
-- Per-user display name/profile
-- Password reset
+- Required user display name for personalization
+- In-app password change with current-password verification
+- Password reset by email
 - Persistent browser session
 - Safe sign-out with local save, cloud upload, and revision verification
+- Per-user Firestore data isolation by Firebase UID
 - Offline-first local storage
 - Automatic Firebase synchronization
-- Cross-device account data
-- Monthly teaching hours and salary calculations
-- Annual salary summary
+- Monthly teaching hours and pay calculations
+- Annual pay summary
 - Multiline Class and Notes fields
 - Direct professional PDF downloads
 - CSV export
@@ -34,7 +24,22 @@ The user's name is stored in their private Firestore profile and automatically p
 - Firebase Spark-compatible architecture
 - Vercel static deployment
 
-## Data layout
+## v2.1.0 product polish
+
+The public account-access page has been redesigned for a stronger commercial presentation with clearer product positioning, professional feature cards, trust indicators, polished spacing, and improved sign-in/sign-up copy.
+
+Settings now includes a dedicated **Account security** section where a signed-in user can change their password without leaving the application. The current password is re-authenticated before Firebase accepts the new password, and the refreshed session remains active after a successful change.
+
+## Multi-user data model
+
+Every user creates an account with:
+
+- Your Name
+- Email
+- Password
+- Password confirmation
+
+The display name is stored in the user's private Firestore profile and personalizes the dashboard, Settings, PDF reports, CSV exports, and backup metadata.
 
 ```text
 users/{uid}/profile/account
@@ -42,7 +47,7 @@ users/{uid}/salaryAudit/database
 users/{uid}/salaryAuditMonths/{YYYY-MM}
 ```
 
-Each authenticated user may only access documents under their own UID when the included Firestore rules are published.
+Each authenticated user may access only documents under their own UID when `firebase/firestore.rules` is published.
 
 ## Required Vercel environment variables
 
@@ -74,14 +79,15 @@ Product branding is centralized in:
 src/brand.js
 ```
 
-User identity is dynamic and comes from the authenticated profile, so no customer name should be hardcoded in runtime source.
+User identity is dynamic and comes from the authenticated profile. No customer-specific name should be hardcoded in runtime source.
 
-## Security
+## Security notes
 
 - Firebase Email/Password Authentication
 - Firestore rules scoped to `request.auth.uid`
-- No service-account/private admin credentials in the client
+- No Firebase Admin/service-account credentials in the browser
+- Password changes require current-password reauthentication
 - Local-first writes before cloud synchronization
-- Safe sign-out blocked if pending changes cannot be verified
+- Safe sign-out is blocked if pending changes cannot be verified
 
-See `docs/FIREBASE_SETUP.md`, `docs/IMPLEMENTATION_NOTES.md`, and `docs/QA_CHECKLIST.md` for deployment and validation details.
+See `docs/FIREBASE_SETUP.md`, `docs/IMPLEMENTATION_NOTES.md`, `docs/AUTH_API.md`, and `docs/QA_CHECKLIST.md` for deployment and validation details.

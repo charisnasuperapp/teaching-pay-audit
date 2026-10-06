@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Teaching Pay Audit is a static Progressive Web App deployed on Vercel. Firebase provides account authentication and private cloud persistence. No custom application server is required.
+Teaching Pay Audit is a static Progressive Web App deployed on Vercel. Firebase provides Email/Password Authentication and private Firestore persistence. No custom application server or paid cloud service is required.
 
 ## Identity
 
@@ -11,11 +11,18 @@ Product identity is static in `src/brand.js`. User identity is dynamic and comes
 Registration sequence:
 
 1. Validate name, email, password, and confirmation.
-2. Create Firebase Email/Password account.
-3. Save `users/{uid}/profile/account`.
-4. Activate the user-scoped local database.
-5. Merge local/cloud salary data.
-6. Synchronize the latest account snapshot.
+2. Require at least 8 password characters in the UI/application layer.
+3. Create Firebase Email/Password account.
+4. Save `users/{uid}/profile/account`.
+5. Activate the user-scoped local database.
+6. Merge local/cloud salary data.
+7. Synchronize the latest account snapshot.
+
+## Password changes
+
+Settings provides an Account security form with current password, new password, and confirmation.
+
+The client does not blindly update a password from an existing long-lived session. It reauthenticates the current account with the supplied current password, then sends the new password using a fresh Firebase ID token. The returned tokens replace the existing local session so the user can continue working without unnecessary logout.
 
 ## Offline-first model
 

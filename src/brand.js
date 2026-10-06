@@ -1,10 +1,11 @@
 export const BRAND = Object.freeze({
   appName: 'Teaching Pay Audit',
-  productName: 'Teaching Hours & Salary Records',
+  version: '2.1.0',
+  productName: 'Professional Teaching Hours & Pay Workspace',
   developerName: 'Charisna',
   slug: 'teaching-pay-audit',
   locale: 'en-US',
-  description: 'A secure teaching-hours and salary workspace with automatic cross-device synchronization, professional reports, and offline-first reliability.',
+  description: 'A professional teaching-hours and pay workspace with automatic calculations, secure cross-device synchronization, offline-first reliability, and polished reports.',
 });
 
 export const BRAND_TITLE = BRAND.appName;

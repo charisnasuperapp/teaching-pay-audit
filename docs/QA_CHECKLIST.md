@@ -3,11 +3,24 @@
 ## Account
 
 - [ ] Sign-up requires Your Name, Email, Password, Confirm Password.
+- [ ] New registration rejects passwords shorter than 8 characters.
 - [ ] Mismatched password confirmation is rejected.
 - [ ] Existing email shows a useful error.
 - [ ] Password reset sends successfully.
 - [ ] Profile name is restored after sign-in on another browser.
 - [ ] Editing profile name updates dashboard and reports.
+
+## Change password
+
+- [ ] Settings contains Account security / Change Password.
+- [ ] Incorrect current password is rejected without destroying the current session.
+- [ ] New password shorter than 8 characters is rejected.
+- [ ] New password must match confirmation.
+- [ ] New password must differ from the current password.
+- [ ] Correct current password successfully changes the Firebase password.
+- [ ] Current session remains active after a successful change.
+- [ ] Old password no longer signs in after logout.
+- [ ] New password signs in successfully.
 
 ## Security
 
@@ -40,7 +53,8 @@
 
 ## Responsive UI
 
+- [ ] Public login/sign-up page is readable and polished on desktop.
 - [ ] Android phone layout.
 - [ ] Android tablet layout.
-- [ ] Desktop layout.
+- [ ] Desktop workspace layout.
 - [ ] Web/PWA installation.

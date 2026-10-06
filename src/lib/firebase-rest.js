@@ -82,6 +82,42 @@ export class FirebaseRestClient {
     return normalizedEmail;
   }
 
+  async changePassword(currentPassword, newPassword) {
+    this.#assertConfigured();
+    const session = await this.#validSession();
+    const email = normalizeEmail(session.email || '');
+    const current = String(currentPassword || '');
+    const next = String(newPassword || '');
+
+    if (!email) throw new Error('Your signed-in account does not have a valid email address.');
+    if (!current) throw new Error('Enter your current password.');
+    if (next.length < 8) throw new Error('Use at least 8 characters for your new password.');
+    if (current === next) throw new Error('Choose a new password that is different from your current password.');
+
+    const verified = await this.#authRequest('accounts:signInWithPassword', {
+      email,
+      password: current,
+      returnSecureToken: true,
+    });
+    const verifiedSession = createSession(verified, email);
+
+    const updated = await this.#authRequest('accounts:update', {
+      idToken: verifiedSession.idToken,
+      password: next,
+      returnSecureToken: true,
+    });
+
+    const updatedSession = normalizeSession({
+      uid: updated.localId || verifiedSession.uid,
+      email: updated.email || verifiedSession.email,
+      idToken: updated.idToken || verifiedSession.idToken,
+      refreshToken: updated.refreshToken || verifiedSession.refreshToken,
+      expiresAt: Date.now() + Number(updated.expiresIn || 3600) * 1000,
+    });
+    if (!updatedSession) throw new Error('The password was updated, but the session could not be refreshed. Sign in again.');
+    return this.#storeSession(updatedSession);
+  }
+
   async fetchProfile() {
     const session = await this.connect();
     const root = this.#userRoot(session.uid);
@@ -234,7 +270,7 @@ export class FirebaseRestClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Firebase-Locale': 'id',
+        'X-Firebase-Locale': 'en',
       },
       body: JSON.stringify(body),
     });
@@ -450,7 +486,7 @@ function authMessage(code) {
     INVALID_PASSWORD: 'The password is incorrect.',
     INVALID_LOGIN_CREDENTIALS: 'The email address or password is incorrect.',
     MISSING_PASSWORD: 'A password is required.',
-    WEAK_PASSWORD: 'The password is too weak. Use at least 6 characters.',
+    WEAK_PASSWORD: 'The password is too weak. Use at least 8 characters.',
     USER_DISABLED: 'This account is disabled in Firebase Authentication.',
     OPERATION_NOT_ALLOWED: 'Email/Password sign-in is not enabled in Firebase Authentication.',
     TOO_MANY_ATTEMPTS_TRY_LATER: 'Too many attempts. Wait a moment and try again.',
