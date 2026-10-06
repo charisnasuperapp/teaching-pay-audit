@@ -1,3 +1,12 @@
+## 2.3.1 - Report Layout & Watermark Reliability Hotfix
+- Fixed annual PNG footer overlap by increasing the report canvas and reserving a safe footer zone.
+- Fixed the monthly PNG total row so the `MONTHLY TOTAL` label is never truncated into a narrow first column.
+- Replaced generic dollar report-header artwork with the MySalary brand mark in PDF and PNG reports.
+- Changed PDF and PNG watermark rendering order so the supplied logo remains subtly visible above opaque table/card backgrounds.
+- Tuned watermark opacity to stay light while remaining visible on phones, PCs, PDF viewers, and exported PNGs.
+- Compacted annual PDF row/card spacing to preserve a clear footer and insight section on a single A4 landscape page.
+- Re-ran automated tests, syntax validation, production build, and rendered PDF visual verification.
+
 ## 2.3.0 - MySalary Brand, Auth & Commercial Polish
 - Promoted MySalary to the public-facing product brand while retaining Teaching Pay Audit as the functional descriptor.
 - Replaced generic auth/loading/header artwork with the supplied brand mark.

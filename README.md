@@ -1,4 +1,4 @@
-# MySalary v2.3.0 — Teaching Pay Audit
+# MySalary v2.3.1 — Teaching Pay Audit
 
 MySalary is a multi-user, offline-first teaching-hours and pay workspace for teachers, tutors, and hourly instructors. It records teaching activity, calculates earnings automatically, synchronizes private account data across devices, and exports polished reports.
 
@@ -26,7 +26,7 @@ MySalary is a multi-user, offline-first teaching-hours and pay workspace for tea
 - Firebase Spark-compatible architecture
 - Vercel static deployment
 
-## v2.3.0 brand & authentication polish
+## v2.3.1 report reliability & branding polish
 
 - Public-facing product brand is now **MySalary** with **Teaching Pay Audit** as the functional descriptor.
 - The supplied brand mark replaces generic money icons in the landing page, loading state, mobile auth header, and signed-in app header.
@@ -36,6 +36,10 @@ MySalary is a multi-user, offline-first teaching-hours and pay workspace for tea
 - Login, registration, and recovery copy is polished for an international commercial audience.
 - Runtime UI contains no personal developer-name attribution.
 - Firebase email-template copy is documented in `docs/FIREBASE_EMAIL_TEMPLATES.md`.
+- PDF/PNG report headers now use the MySalary logo instead of a generic currency icon.
+- Watermarks are rendered as a final low-opacity overlay so opaque table/card backgrounds cannot hide them.
+- Annual PNG export reserves a dedicated footer safety zone, preventing footer/total overlap on phone and PC.
+- Monthly PNG totals use a merged label area so `MONTHLY TOTAL` is always shown in full.
 
 ## Reporting/export layer
 

@@ -1,30 +1,23 @@
-# MySalary v2.3.0 — Brand, Auth & Commercial Polish
+# MySalary v2.3.1 - Report Layout & Watermark Reliability Hotfix
 
-This release consolidates the reporting upgrades from v2.2 with a stronger commercial identity and more professional authentication experience.
+This maintenance release fixes the report-export issues observed on both mobile and desktop while preserving all MySalary v2.3.0 functionality.
 
-## Highlights
+## Fixed
 
-- MySalary is now the public-facing product brand.
-- Teaching Pay Audit remains the product descriptor/reporting purpose.
-- Supplied brand mark is used in the landing header, loading screen, mobile authentication header, signed-in header, footer, PDF watermark, and report imagery.
-- Desktop landing page includes a low-opacity branded hero watermark.
-- PWA/app icons now use the supplied logo instead of the old generic document/money artwork.
-- Password-reset success messaging is privacy-safe and does not disclose whether an account exists.
-- Login, registration, and recovery copy was refined for an international commercial audience.
-- Professional Firebase email-template copy is included in documentation.
-- Existing PDF, PNG, Excel, CSV, backup, cloud-sync, password-change, and safe-sign-out functionality is preserved.
+- Annual PNG exports now reserve enough vertical space so the footer never overlaps the annual total row.
+- Monthly PNG totals use a merged label area, so `MONTHLY TOTAL` is displayed in full.
+- PDF annual layout is more compact and leaves a clean safety margin above the footer.
+- PDF and PNG watermarks are drawn as a final low-opacity overlay so opaque report cards and table rows no longer hide them.
+- The watermark remains deliberately subtle, but it is now visibly present in the report body.
+- PDF and PNG report headers use the supplied MySalary brand mark instead of the generic dollar icon.
 
-## Firebase impact
+## Preserved
 
-No Firestore schema migration is required and no paid Firebase service is introduced.
+- Multi-user Firebase Authentication and UID-isolated Firestore data.
+- Offline-first local persistence and fast cloud synchronization.
+- Safe verified sign-out and in-app password changes.
+- CSV, Excel, PNG, and direct PDF export.
+- Professional Excel workbook and analytics output.
+- MySalary commercial branding and custom-domain compatibility.
 
-Keep:
-
-```text
-Authentication: Email/Password enabled
-Firestore: UID-scoped production rules
-Vercel: VITE_FIREBASE_API_KEY + VITE_FIREBASE_PROJECT_ID
-Authorized domains: mysalary.my.id + www.mysalary.my.id
-```
-
-For email branding, set the Firebase public-facing name and sender name to `MySalary`; see `docs/FIREBASE_EMAIL_TEMPLATES.md`.
+No Firebase schema, Authentication, Firestore Rules, or Vercel environment-variable changes are required.

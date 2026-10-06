@@ -150,12 +150,12 @@ function renderMonthReport(document, model, brandMark) {
   const addPage = (continuation = false) => {
     page = document.addPage();
     pages.push(page);
-    drawWatermark(page, brandMark);
     y = drawReportHeader(page, {
       margin,
       reportType: 'Monthly Teaching Pay Report',
       periodLabel: model.periodLabel,
       continuation,
+      brandMark,
     });
 
     if (!continuation) {
@@ -190,6 +190,8 @@ function renderMonthReport(document, model, brandMark) {
   y -= totalHeight;
   drawSignatureSection(page, model.teacherName, margin, y - 29);
 
+  pages.forEach((reportPage) => drawWatermark(reportPage, brandMark, { scale: 0.47, opacity: 0.035 }));
+
   addPageFooters(pages, {
     leftText: BRAND_TITLE,
     rightText: `Generated ${model.generatedLabel}`,
@@ -200,19 +202,19 @@ function renderMonthReport(document, model, brandMark) {
 function renderYearReport(document, model, brandMark) {
   const margin = 42;
   const page = document.addPage();
-  drawWatermark(page, brandMark, { scale: 0.40, opacity: 0.04 });
   let y = drawReportHeader(page, {
     margin,
     reportType: 'Annual Teaching Pay Report',
     periodLabel: String(model.year),
     continuation: false,
+    brandMark,
   });
 
   y = drawAnnualIntroduction(page, model, margin, y);
-  y = drawTableHeader(page, YEARLY_COLUMNS, margin, y, 22);
+  y = drawTableHeader(page, YEARLY_COLUMNS, margin, y, 20);
 
   model.months.forEach((month, index) => {
-    const height = 19;
+    const height = 17.5;
     drawTableRow(page, YEARLY_COLUMNS, month, margin, y, height, index % 2 === 1, null, month.summary.totalHours === 0);
     y -= height;
   });
@@ -226,10 +228,11 @@ function renderYearReport(document, model, brandMark) {
     rate: '',
     pay: formatCurrency(model.totals.totalPay),
   };
-  drawTableRow(page, YEARLY_COLUMNS, totalRow, margin, y, 24, false, null, false, true);
-  y -= 24;
+  drawTableRow(page, YEARLY_COLUMNS, totalRow, margin, y, 22, false, null, false, true);
+  y -= 22;
 
-  drawAnnualInsights(page, model, margin, y - 10);
+  drawAnnualInsights(page, model, margin, y - 8);
+  drawWatermark(page, brandMark, { scale: 0.42, opacity: 0.035 });
   addPageFooters([page], {
     leftText: BRAND_TITLE,
     rightText: `Generated ${model.generatedLabel}`,
@@ -237,7 +240,7 @@ function renderYearReport(document, model, brandMark) {
   });
 }
 
-function drawWatermark(page, brandMark, { scale = 0.52, opacity = 0.045 } = {}) {
+function drawWatermark(page, brandMark, { scale = 0.47, opacity = 0.065 } = {}) {
   if (!brandMark) return;
   const size = Math.min(page.width, page.height) * scale;
   const x = (page.width - size) / 2;
@@ -245,14 +248,16 @@ function drawWatermark(page, brandMark, { scale = 0.52, opacity = 0.045 } = {}) 
   page.drawImage(brandMark, x, y, size, size, { opacity });
 }
 
-function drawReportHeader(page, { margin, reportType, periodLabel, continuation }) {
+function drawReportHeader(page, { margin, reportType, periodLabel, continuation, brandMark }) {
   const top = page.height - 22;
   page.fillRect(0, page.height - 7, page.width, 7, COLORS.primary);
 
   const markSize = 34;
   const markY = top - markSize - 10;
-  page.fillRect(margin, markY, markSize, markSize, COLORS.primary);
-  page.text('$', margin + markSize / 2, markY + 9.5, { size: 20, bold: true, color: COLORS.white, align: 'center' });
+  page.fillRect(margin, markY, markSize, markSize, COLORS.soft);
+  page.strokeRect(margin, markY, markSize, markSize, { color: COLORS.line, lineWidth: 0.7 });
+  if (brandMark) page.drawImage(brandMark, margin + 3, markY + 3, markSize - 6, markSize - 6, { opacity: 1 });
+  else page.text('M', margin + markSize / 2, markY + 10, { size: 18, bold: true, color: COLORS.primaryDark, align: 'center' });
 
   const leftX = margin + markSize + 13;
   const rightX = page.width - margin;
@@ -436,8 +441,8 @@ function drawAnnualInsights(page, model, margin, topY) {
   const gap = 10;
   const totalWidthValue = page.width - margin * 2;
   const cardWidth = (totalWidthValue - gap * 2) / 3;
-  const cardHeight = 45;
-  const cardTop = topY - 20;
+  const cardHeight = 39;
+  const cardTop = topY - 17;
   const bestMonthText = model.bestMonth.summary.totalPay > 0 ? model.bestMonth.month : '-';
   const bestMonthDetail = model.bestMonth.summary.totalPay > 0
     ? `${formatHours(model.bestMonth.summary.totalHours)} hours - ${formatCurrency(model.bestMonth.summary.totalPay)}`
@@ -453,9 +458,9 @@ function drawAnnualInsights(page, model, margin, topY) {
     const y = cardTop - cardHeight;
     page.fillRect(x, y, cardWidth, cardHeight, COLORS.soft);
     page.strokeRect(x, y, cardWidth, cardHeight, { color: COLORS.line, lineWidth: 0.7 });
-    page.text(label.toUpperCase(), x + 9, y + 31, { size: 5.9, bold: true, color: COLORS.muted });
-    page.text(value, x + 9, y + 18, { size: 9, bold: true, color: COLORS.ink, maxWidth: cardWidth - 18 });
-    page.text(detail, x + 9, y + 7, { size: 6.4, color: COLORS.muted, maxWidth: cardWidth - 18 });
+    page.text(label.toUpperCase(), x + 9, y + 27, { size: 5.6, bold: true, color: COLORS.muted });
+    page.text(value, x + 9, y + 16, { size: 8.5, bold: true, color: COLORS.ink, maxWidth: cardWidth - 18 });
+    page.text(detail, x + 9, y + 6, { size: 5.9, color: COLORS.muted, maxWidth: cardWidth - 18 });
   });
 }
 

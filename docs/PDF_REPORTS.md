@@ -13,11 +13,15 @@ Monthly metadata is rendered in a 2x2 grid:
 - Hourly Rate
 - Generated On
 
-The supplied visual mark is embedded into every PDF page as a background image with approximately 4-5% opacity. It is intentionally faint and placed behind report content.
+The supplied visual mark is embedded into every PDF page as a low-opacity watermark overlay. It is intentionally faint (roughly 3-4% opacity), but it is drawn after opaque table/card backgrounds so it remains visible in common desktop and mobile PDF viewers without obscuring report text.
+
+The report header also uses the MySalary brand mark instead of a generic currency glyph.
 
 ## PNG export
 
-PNG reports are generated locally using the Canvas API. Monthly PNG height expands with report content instead of forcing a page break. Annual PNG uses a landscape report layout.
+PNG reports are generated locally using the Canvas API. Monthly PNG height expands with report content instead of forcing a page break. The monthly total label uses a merged area so it cannot be truncated by the narrow `No.` column.
+
+Annual PNG uses a landscape report layout with additional bottom safety space so the total row and footer never overlap. The same low-opacity MySalary watermark is drawn as a final overlay for consistent visibility across phone and PC exports.
 
 No server-side image generation is used.
 

@@ -1,58 +1,34 @@
-# MySalary v2.3.0 — Update / Deployment Steps
+# MySalary v2.3.1 - Update / Deployment Steps
 
-This is a source-only update. Existing Firebase users and Firestore salary data do not require migration.
+## Before updating
 
-1. Download a JSON backup from the currently deployed application as a precaution.
-2. Replace the GitHub repository source with the contents of this package.
-3. Do not upload `dist/`; Vercel generates it during deployment.
-4. Commit the update, for example:
+1. Open the current production app and wait until cloud synchronization is complete.
+2. Download a JSON backup from Settings.
+3. Keep the current Vercel and Firebase settings unchanged.
 
-```text
-MySalary v2.3.0 - brand and authentication polish
-```
+## GitHub update
 
-5. Confirm Vercel still contains:
+1. Extract the MySalary v2.3.1 ZIP.
+2. Upload the extracted project files to the root of the existing `teaching-pay-audit` repository, replacing the old source files.
+3. Do not upload a generated `dist/` directory.
+4. Commit with, for example:
 
-```text
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_PROJECT_ID
-```
+   `MySalary v2.3.1 - report layout and watermark hotfix`
 
-6. Push to `main` and allow Vercel to build automatically.
-7. Confirm Production reaches `Ready`.
-8. Hard refresh once after deployment so the updated service-worker cache and PWA icons are used.
-9. Verify `https://www.mysalary.my.id` and the root-domain redirect.
-10. Test sign-up, sign-in, password reset, password change, cloud sync, and Save & Sign Out.
-11. Test monthly PDF, PNG, Excel, CSV, and annual exports.
-12. Confirm the new logo is visible on the landing page and app header without reducing text readability.
+5. Push/commit to `main` and wait for Vercel Production to become **Ready**.
 
-## Firebase email branding
+## After Vercel deploys
 
-Open:
+1. Open `https://www.mysalary.my.id` (or your selected production domain).
+2. Perform one hard refresh (`Ctrl + Shift + R`) on desktop. On mobile/PWA, fully close and reopen the app so the v2.3.1 service-worker cache activates.
+3. Export one monthly PDF and PNG and one annual PDF and PNG.
+4. Confirm:
+   - report logo appears in the header;
+   - watermark is faint but visible;
+   - `MONTHLY TOTAL` is displayed in full;
+   - annual footer is separated from the total row;
+   - no report text overlaps on phone or PC.
 
-```text
-Firebase → Authentication → Templates
-```
+## Backend
 
-Use the exact recommended sender names, subjects, and messages in:
-
-```text
-docs/FIREBASE_EMAIL_TEMPLATES.md
-```
-
-Also set the Firebase public-facing name to:
-
-```text
-MySalary
-```
-
-Keep these Authorized domains:
-
-```text
-mysalary.my.id
-www.mysalary.my.id
-```
-
-## Firestore
-
-No Firestore rules change is required for v2.3.0 if the current multi-user rules are already published.
+No changes are required to Firebase Authentication, Firestore Rules, Firestore data, Vercel environment variables, or custom-domain DNS for this release.

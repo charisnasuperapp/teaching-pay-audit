@@ -7,7 +7,7 @@ import { BRAND, BRAND_TITLE } from '../src/brand.js';
 test('multi-user product branding is centralized and customer-neutral', async () => {
   assert.equal(BRAND.appName, 'MySalary');
   assert.equal(BRAND.productName, 'Teaching Pay Audit');
-  assert.equal(BRAND.version, '2.3.0');
+  assert.equal(BRAND.version, '2.3.1');
   assert.equal('developerName' in BRAND, false);
   assert.equal(BRAND.slug, 'mysalary');
   assert.equal(BRAND_TITLE, 'MySalary — Teaching Pay Audit');

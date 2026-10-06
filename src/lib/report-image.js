@@ -32,17 +32,17 @@ export async function buildMonthCanvas(month, displayName = 'Teacher') {
     return { entry, classLines, noteLines, height: Math.max(62, 26 + Math.max(classLines.length, noteLines.length) * 25) };
   });
   const rowsHeight = rowLayouts.reduce((sum, item) => sum + item.height, 0) || 88;
-  const height = Math.max(1600, 690 + rowsHeight + 300);
+  const height = Math.max(1680, 690 + rowsHeight + 380);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
-  await drawWatermark(ctx, width, height);
+  const brandImage = await loadBrandMark();
 
   let y = 68;
   drawTopRule(ctx, width);
-  y = drawImageHeader(ctx, { x: margin, y, width: usable, title: 'Monthly Teaching Pay Report', period: formatMonthKey(month.monthKey) });
+  y = drawImageHeader(ctx, { x: margin, y, width: usable, title: 'Monthly Teaching Pay Report', period: formatMonthKey(month.monthKey), brandImage });
   y += 26;
   drawLabel(ctx, 'MONTHLY PAY RECORD', margin, y); y += 38;
   drawText(ctx, 'Daily Teaching Hours and Earnings', margin, y, { size: 35, weight: 800, color: COLORS.ink }); y += 34;
@@ -73,21 +73,22 @@ export async function buildMonthCanvas(month, displayName = 'Teacher') {
       y += layout.height;
     });
   }
-  drawTotalRow(ctx, ['MONTHLY TOTAL', '', '', formatHours(summary.totalHours), '', formatCurrency(summary.totalPay), ''], cols, margin, y, 62); y += 62;
+  drawMonthlyTotalRow(ctx, summary, cols, margin, y, 62); y += 62;
   y += 60;
   drawSignatures(ctx, displayName, margin, y, usable); y += 170;
+  drawWatermark(ctx, width, height, brandImage, 0.035);
   drawFooter(ctx, width, height, `Generated ${formatGeneratedAt(new Date())}`);
   return canvas;
 }
 
 export async function buildYearCanvas(database, year, displayName = 'Teacher') {
-  const width = 1800, height = 1240, margin = 90, usable = width - margin * 2;
+  const width = 1800, height = 1480, margin = 90, usable = width - margin * 2;
   const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
-  await drawWatermark(ctx, width, height, 0.04);
+  const brandImage = await loadBrandMark();
   let y = 72;
   drawTopRule(ctx, width);
-  y = drawImageHeader(ctx, { x: margin, y, width: usable, title: 'Annual Teaching Pay Report', period: String(year) });
+  y = drawImageHeader(ctx, { x: margin, y, width: usable, title: 'Annual Teaching Pay Report', period: String(year), brandImage });
   y += 28;
   drawLabel(ctx, 'ANNUAL PAY RECORD', margin, y); y += 38;
   drawText(ctx, 'Annual Teaching Hours and Earnings', margin, y, { size: 34, weight: 800 }); y += 34;
@@ -107,13 +108,16 @@ export async function buildYearCanvas(database, year, displayName = 'Teacher') {
     y += 49;
   });
   drawTotalRow(ctx, ['', `TOTAL ${year}`, String(totals.days), formatHours(totals.hours), '', '', formatCurrency(totals.pay)], cols, margin, y, 60);
+  drawWatermark(ctx, width, height, brandImage, 0.035);
   drawFooter(ctx, width, height, `Generated ${formatGeneratedAt(new Date())}`);
   return canvas;
 }
 
-function drawImageHeader(ctx, { x, y, width, title, period }) {
-  ctx.fillStyle = COLORS.primary; roundRect(ctx, x, y, 56, 56, 8); ctx.fill();
-  drawText(ctx, '$', x + 28, y + 39, { size: 34, weight: 800, color: '#fff', align: 'center' });
+function drawImageHeader(ctx, { x, y, width, title, period, brandImage }) {
+  ctx.fillStyle = COLORS.soft; roundRect(ctx, x, y, 56, 56, 10); ctx.fill();
+  strokeRect(ctx, x, y, 56, 56, COLORS.line);
+  if (brandImage) ctx.drawImage(brandImage, x + 6, y + 6, 44, 44);
+  else drawText(ctx, 'M', x + 28, y + 39, { size: 30, weight: 800, color: COLORS.primaryDark, align: 'center' });
   drawText(ctx, BRAND.appName.toUpperCase(), x + 76, y + 18, { size: 13, weight: 800, color: COLORS.primary });
   drawText(ctx, title, x + 76, y + 43, { size: 27, weight: 800, color: COLORS.ink });
   drawText(ctx, 'REPORTING PERIOD', x + width, y + 16, { size: 12, weight: 800, color: COLORS.muted, align: 'right' });
@@ -148,18 +152,39 @@ function drawTotalRow(ctx, values, cols, x, y, h) {
   values.forEach((v,i)=>{ drawText(ctx,String(v??''),cx+14,y+37,{size:15,weight:800,color:'#fff',maxWidth:cols[i]-28}); cx+=cols[i]; if(i<cols.length-1) drawVLine(ctx,cx,y,y+h,'#465168'); });
 }
 
+function drawMonthlyTotalRow(ctx, summary, cols, x, y, h) {
+  const width = cols.reduce((a,b)=>a+b,0);
+  ctx.fillStyle = COLORS.ink; ctx.fillRect(x, y, width, h);
+  const mergedWidth = cols[0] + cols[1] + cols[2];
+  drawText(ctx, 'MONTHLY TOTAL', x + 16, y + 38, { size: 16, weight: 800, color: '#fff', maxWidth: mergedWidth - 32 });
+  let cx = x + mergedWidth;
+  drawVLine(ctx, cx, y, y + h, '#465168');
+  drawText(ctx, formatHours(summary.totalHours), cx + cols[3] - 16, y + 38, { size: 16, weight: 800, color: '#fff', align: 'right', maxWidth: cols[3] - 28 });
+  cx += cols[3]; drawVLine(ctx, cx, y, y + h, '#465168');
+  cx += cols[4]; drawVLine(ctx, cx, y, y + h, '#465168');
+  drawText(ctx, formatCurrency(summary.totalPay), cx + cols[5] - 16, y + 38, { size: 16, weight: 800, color: '#fff', align: 'right', maxWidth: cols[5] - 28 });
+  cx += cols[5]; drawVLine(ctx, cx, y, y + h, '#465168');
+}
+
 function drawSignatures(ctx, name, x, y, width) {
   const boxW=(width-120)/2; drawText(ctx,'Prepared by',x+boxW/2,y,{size:14,color:COLORS.muted,align:'center'}); drawText(ctx,'Reviewed by',x+boxW+120+boxW/2,y,{size:14,color:COLORS.muted,align:'center'});
   const ly=y+82; ctx.strokeStyle='#8992a3'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(x+28,ly); ctx.lineTo(x+boxW-28,ly); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x+boxW+148,ly); ctx.lineTo(x+width-28,ly); ctx.stroke();
   drawText(ctx,name||'Teacher',x+boxW/2,ly+30,{size:17,weight:750,align:'center'}); drawText(ctx,'Teacher',x+boxW/2,ly+54,{size:13,color:COLORS.muted,align:'center'}); drawText(ctx,'Reviewer',x+boxW+120+boxW/2,ly+30,{size:17,weight:750,align:'center'});
 }
 
-async function drawWatermark(ctx, width, height, opacity = 0.045) {
-  try {
-    const image = await loadImage('/brand-mark.png');
-    const size = Math.min(width, height) * 0.58;
-    ctx.save(); ctx.globalAlpha = opacity; ctx.drawImage(image, (width-size)/2, (height-size)/2, size, size); ctx.restore();
-  } catch {}
+function drawWatermark(ctx, width, height, image, opacity = 0.07) {
+  if (!image) return;
+  const size = Math.min(width, height) * 0.52;
+  const x = (width - size) / 2;
+  const y = (height - size) / 2 - Math.min(35, height * 0.025);
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(image, x, y, size, size);
+  ctx.restore();
+}
+
+async function loadBrandMark() {
+  try { return await loadImage('/brand-mark.png'); } catch { return null; }
 }
 
 function drawFooter(ctx, width, height, rightText) {

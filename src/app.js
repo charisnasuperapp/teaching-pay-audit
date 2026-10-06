@@ -1143,7 +1143,7 @@ function renderSettings() {
 
       <section class="settings-section about-settings-section">
         <div class="section-heading">${icon('signature', 20)}<div><h3>About</h3><p>Production workspace information.</p></div></div>
-        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.3.0')}</strong></div><div><span>Workspace</span><strong>Private & synchronized</strong></div></div>
+        <div class="about-grid"><div><span>Product</span><strong>${escapeHtml(BRAND.appName)}</strong></div><div><span>Version</span><strong>${escapeHtml(BRAND.version || '2.3.1')}</strong></div><div><span>Workspace</span><strong>Private & synchronized</strong></div></div>
       </section>
 
       <section class="settings-section danger-zone"><div class="section-heading">${icon('trash', 20)}<div><h3>Danger zone</h3><p>Only the currently selected month's teaching entries will be cleared.</p></div></div><button class="button danger-outline" data-action="clear-month">${icon('trash', 17)} Clear this month</button></section>

@@ -1,4 +1,4 @@
-# QA Checklist - v2.3.0
+# QA Checklist - v2.3.1
 
 ## Authentication & data
 

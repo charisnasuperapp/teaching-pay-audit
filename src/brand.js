@@ -1,6 +1,6 @@
 export const BRAND = Object.freeze({
   appName: 'MySalary',
-  version: '2.3.0',
+  version: '2.3.1',
   productName: 'Teaching Pay Audit',
   slug: 'mysalary',
   locale: 'en-US',
