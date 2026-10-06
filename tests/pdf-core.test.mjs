@@ -12,7 +12,7 @@ test('PDF core wraps long words and respects manual line breaks', () => {
 test('PDF core generates a structurally complete PDF with fonts and xref table', () => {
   const document = new PdfDocument({ ...PDF_PAGE.A4_PORTRAIT, title: 'Test PDF' });
   const page = document.addPage();
-  page.text('Hello Ayesha', 40, 760, { size: 12, bold: true });
+  page.text('Hello Ipul', 40, 760, { size: 12, bold: true });
   const bytes = document.toUint8Array();
   const pdf = new TextDecoder('latin1').decode(bytes);
 
@@ -21,7 +21,7 @@ test('PDF core generates a structurally complete PDF with fonts and xref table',
   assert.match(pdf, /\/BaseFont \/Helvetica-Bold/);
   assert.match(pdf, /xref/);
   assert.match(pdf, /startxref/);
-  assert.match(pdf, /Hello Ayesha/);
+  assert.match(pdf, /Hello Ipul/);
 });
 
 test('PDF download uses a real browser download link without a preview popup or print dialog', () => {

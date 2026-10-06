@@ -1,17 +1,31 @@
-# Ayesha Salary - Deployment Steps
+# Teaching Pay Audit v2.0.0 — Update / Deployment Steps
 
-1. Keep the `Ayesha-salary` GitHub repository private.
-2. Upload this package so `package.json`, `vercel.json`, `src/`, `firebase/`, `docs/`, `scripts/`, and `tests/` are at repository root.
-3. Create a separate Firebase project owned by Ayesha/customer.
-4. Enable Firebase Authentication -> Email/Password.
+1. Keep the GitHub repository private while preparing production.
+2. Replace the previous customer-specific source with this v2.0.0 package.
+3. Do not upload `dist/`; Vercel builds it automatically.
+4. In Firebase Authentication, enable Email/Password.
 5. Create Cloud Firestore in Production mode.
 6. Publish `firebase/firestore.rules`.
-7. Register a Firebase Web App and copy its `apiKey` and `projectId`.
-8. Import the `Ayesha-salary` repository into Ayesha's Vercel account.
-9. Add `VITE_FIREBASE_API_KEY` and `VITE_FIREBASE_PROJECT_ID` to Vercel Environment Variables.
-10. Deploy using `npm run build` with output directory `dist`.
-11. Test account creation, login, cross-browser synchronization, offline/online recovery, safe sign-out, CSV, JSON backup, monthly PDF, and annual PDF before handover.
+7. Register one Firebase Web App.
+8. Import the GitHub repository into Vercel.
+9. Configure:
 
-## Future customer copies
+```text
+Framework Preset: Other
+Build Command: npm run build
+Output Directory: dist
+```
 
-Change customer-facing identity in `src/brand.js` before creating the next customer's Firebase/Vercel stack. Each customer must use a separate Firebase project.
+10. Add Vercel environment variables:
+
+```text
+VITE_FIREBASE_API_KEY=<Firebase Web API key>
+VITE_FIREBASE_PROJECT_ID=<Firebase project ID>
+```
+
+11. Deploy.
+12. Create two test accounts with different names/emails.
+13. Confirm each account sees only its own records.
+14. Confirm the profile name appears in the dashboard and PDF.
+15. Confirm synchronization works between two browsers using the same account.
+16. Confirm safe sign-out completes only after cloud verification.

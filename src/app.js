@@ -1,10 +1,10 @@
-import { BRAND, BRAND_CREATED_FOR } from './brand.js';
+import { BRAND, BRAND_DEVELOPER_CREDIT } from './brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth, validateEntry } from './lib/calculations.js';
 import { createDatabase, createMonth, ensureMonth, markMonthEdited, markSettingsEdited, mergeDatabases, sanitizeDatabase } from './lib/database.js';
 import { formatMonthKey, getMonthKeysForYear, getYear, shiftMonth, toMonthKey } from './lib/date.js';
 import { exportBackup, exportMonthCsv, exportYearCsv, readBackup } from './lib/export.js';
 import { exportMonthPdf, exportYearPdf } from './lib/pdf-report.js';
-import { FirebaseRestClient } from './lib/firebase-rest.js';
+import { FirebaseRestClient, normalizeDisplayName } from './lib/firebase-rest.js';
 import { clearDatabase, loadDatabase, loadDatabaseOrNull, saveDatabase } from './lib/storage.js';
 import { assertCloudLogoutReady, assertNoPendingChanges, assertRevisionConfirmed } from './lib/logout-guard.js';
 
@@ -27,6 +27,7 @@ const state = {
   authError: '',
   authNotice: '',
   authEmail: '',
+  authDisplayName: '',
   passwordVisible: false,
   logoutDialogOpen: false,
   logoutPhase: 'idle',
@@ -156,25 +157,25 @@ async function handleClick(event) {
     state.mobileMenuOpen = !state.mobileMenuOpen;
     render();
   } else if (action === 'export-csv') {
-    exportMonthCsv(currentMonth());
+    exportMonthCsv(currentMonth(), currentDisplayName());
   } else if (action === 'export-year-csv') {
-    exportYearCsv(state.database, state.selectedYear);
+    exportYearCsv(state.database, state.selectedYear, currentDisplayName());
   } else if (action === 'export-month-pdf') {
     try {
-      exportMonthPdf(currentMonth(), state.database.settings.teacherName);
+      exportMonthPdf(currentMonth(), currentDisplayName());
       showToast('Monthly PDF downloaded successfully.', 'success');
     } catch (error) {
       showToast(errorMessage(error), 'error');
     }
   } else if (action === 'export-year-pdf') {
     try {
-      exportYearPdf(state.database, state.selectedYear);
+      exportYearPdf(state.database, state.selectedYear, currentDisplayName());
       showToast('Annual PDF downloaded successfully.', 'success');
     } catch (error) {
       showToast(errorMessage(error), 'error');
     }
   } else if (action === 'backup') {
-    exportBackup(state.database);
+    exportBackup(state.database, { displayName: currentDisplayName(), email: state.currentUser?.email || '' });
   } else if (action === 'restore') {
     backupInput.click();
   } else if (action === 'clear-month') {
@@ -200,14 +201,24 @@ function setAuthMode(mode) {
 
 async function handleSubmit(event) {
   const form = event.target instanceof HTMLFormElement ? event.target : null;
-  if (!form?.dataset.authForm || state.busy) return;
+  if (!form || state.busy) return;
+
+  if (form.dataset.profileForm === 'true') {
+    event.preventDefault();
+    await handleProfileSubmit(form);
+    return;
+  }
+
+  if (!form.dataset.authForm) return;
   event.preventDefault();
 
   const formData = new FormData(form);
   const email = String(formData.get('email') || '').trim();
+  const displayName = normalizeDisplayName(formData.get('displayName') || '');
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirmPassword') || '');
   state.authEmail = email;
+  if (displayName) state.authDisplayName = displayName;
   state.authError = '';
   state.authNotice = '';
   state.busy = true;
@@ -221,14 +232,29 @@ async function handleSubmit(event) {
       return;
     }
 
-    if (form.dataset.authForm === 'register' && password !== confirmPassword) {
-      throw new Error('Password confirmation does not match.');
+    const isRegister = form.dataset.authForm === 'register';
+    if (isRegister) {
+      if (!displayName) throw new Error('Enter your name.');
+      if (displayName.length < 2) throw new Error('Your name must contain at least 2 characters.');
+      if (password !== confirmPassword) throw new Error('Password confirmation does not match.');
     }
 
-    const session = form.dataset.authForm === 'register'
+    const session = isRegister
       ? await cloud.signUp(email, password)
       : await cloud.signIn(email, password);
-    await activateAuthenticatedSession(session, { silent: false });
+
+    let profile = null;
+    if (isRegister) {
+      const now = new Date().toISOString();
+      try {
+        profile = await cloud.saveProfile({ displayName, email: session.email || email, createdAt: now, updatedAt: now });
+      } catch (error) {
+        cloud.signOut();
+        throw new Error(`Your account was created, but the profile could not be initialized. Sign in and try again. ${errorMessage(error)}`);
+      }
+    }
+
+    await activateAuthenticatedSession(session, { silent: false, profile });
   } catch (error) {
     if (state.authStatus === 'authenticated') {
       cloud.signOut();
@@ -244,13 +270,85 @@ async function handleSubmit(event) {
   }
 }
 
-async function activateAuthenticatedSession(session, { silent = false } = {}) {
-  state.currentUser = { uid: session.uid, email: session.email || '' };
+async function handleProfileSubmit(form) {
+  const formData = new FormData(form);
+  const displayName = normalizeDisplayName(formData.get('displayName') || '');
+  if (displayName.length < 2) {
+    showToast('Your name must contain at least 2 characters.', 'error');
+    return;
+  }
+  if (!cloud.authenticated || !state.currentUser) {
+    showToast('Sign in again before updating your profile.', 'error');
+    return;
+  }
+
+  state.busy = true;
+  render();
+  try {
+    const now = new Date().toISOString();
+    const profile = await cloud.saveProfile({
+      displayName,
+      email: state.currentUser.email,
+      createdAt: state.currentUser.createdAt || now,
+      updatedAt: now,
+    });
+    state.currentUser = { ...state.currentUser, ...profile };
+    state.database.settings.teacherName = profile.displayName;
+    state.database.settings.profileNameUpdatedAt = profile.updatedAt || now;
+    markSettingsEdited(state.database.settings);
+    settingsDirty = true;
+    await saveDatabase(state.database, state.localScope);
+    await flushCloudChanges({ immediate: true, throwOnError: true });
+    showToast('Profile name updated successfully.', 'success');
+  } catch (error) {
+    showToast(errorMessage(error), 'error');
+  } finally {
+    state.busy = false;
+    render();
+  }
+}
+
+async function activateAuthenticatedSession(session, { silent = false, profile = null } = {}) {
   state.authStatus = 'authenticated';
   state.authError = '';
   state.authNotice = '';
   state.cloudStatus = navigator.onLine ? 'syncing' : 'error';
   state.cloudError = navigator.onLine ? '' : 'This device is offline. Local data will sync when an internet connection is available.';
+
+  let resolvedProfile = profile;
+  if (!resolvedProfile && navigator.onLine) {
+    try {
+      resolvedProfile = await cloud.fetchProfile();
+    } catch (error) {
+      state.cloudError = errorMessage(error);
+    }
+  }
+
+  if (!resolvedProfile) {
+    const fallbackName = normalizeDisplayName(
+      state.database?.settings?.teacherName
+      || String(session.email || '').split('@')[0]
+      || 'Teacher',
+    ) || 'Teacher';
+    const now = new Date().toISOString();
+    resolvedProfile = {
+      displayName: fallbackName,
+      email: session.email || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (navigator.onLine) {
+      try { resolvedProfile = await cloud.saveProfile(resolvedProfile); } catch {}
+    }
+  }
+
+  state.currentUser = {
+    uid: session.uid,
+    email: resolvedProfile.email || session.email || '',
+    displayName: resolvedProfile.displayName,
+    createdAt: resolvedProfile.createdAt || EPOCH,
+    updatedAt: resolvedProfile.updatedAt || EPOCH,
+  };
 
   const scope = `user:${session.uid}`;
   const userDatabase = (await loadDatabaseOrNull(scope)) || createDatabase();
@@ -260,6 +358,7 @@ async function activateAuthenticatedSession(session, { silent = false } = {}) {
     state.legacyMigrationPending ? mergeDatabases(userDatabase, state.database) : userDatabase,
     state.monthKey,
   );
+  reconcileProfileMirror();
   state.localScope = scope;
   await saveDatabase(state.database, state.localScope);
   render();
@@ -330,6 +429,7 @@ async function signOutCurrentUser() {
     await cloud.connect();
     const remote = await cloud.fetchSnapshot();
     state.database = ensureMonth(mergeDatabases(state.database, remote.database), state.monthKey);
+    syncDisplayNameFromDatabase();
     await saveDatabase(state.database, state.localScope);
     lastCloudRevision = await cloud.syncAll(state.database);
     const confirmedRevision = await cloud.fetchRevision();
@@ -372,6 +472,7 @@ async function signOutCurrentUser() {
   state.authMode = 'login';
   state.authError = '';
   state.authNotice = 'All data was saved and the account was signed out safely.';
+  state.authDisplayName = '';
   state.passwordVisible = false;
   state.busy = false;
   render();
@@ -493,6 +594,7 @@ async function connectAndSync({ silent = false } = {}) {
     await cloud.connect();
     const remote = await cloud.fetchSnapshot();
     state.database = ensureMonth(mergeDatabases(state.database, remote.database), state.monthKey);
+    syncDisplayNameFromDatabase();
     await saveDatabase(state.database, state.localScope);
     lastCloudRevision = await cloud.syncAll(state.database);
     dirtyMonthKeys.clear();
@@ -522,6 +624,7 @@ async function syncNow() {
     await cloud.connect();
     const remote = await cloud.fetchSnapshot();
     state.database = ensureMonth(mergeDatabases(state.database, remote.database), state.monthKey);
+    syncDisplayNameFromDatabase();
     await saveDatabase(state.database, state.localScope);
     lastCloudRevision = await cloud.syncAll(state.database);
     dirtyMonthKeys.clear();
@@ -622,6 +725,7 @@ async function pullRemoteChanges({ silent = true } = {}) {
     const remote = await cloud.fetchSnapshot();
     if (remote.revision === lastCloudRevision) return;
     state.database = ensureMonth(mergeDatabases(state.database, remote.database), state.monthKey);
+    syncDisplayNameFromDatabase();
     await saveDatabase(state.database, state.localScope);
     lastCloudRevision = remote.revision;
     state.cloudStatus = 'synced';
@@ -700,6 +804,42 @@ function handleBeforeUnload(event) {
   }
 }
 
+function currentDisplayName() {
+  return normalizeDisplayName(state.currentUser?.displayName || state.database?.settings?.teacherName || 'Teacher') || 'Teacher';
+}
+
+function syncDisplayNameFromDatabase() {
+  reconcileProfileMirror();
+}
+
+function reconcileProfileMirror() {
+  if (!state.currentUser || !state.database?.settings) return;
+  const settings = state.database.settings;
+  const mirroredName = normalizeDisplayName(settings.teacherName || '');
+  const mirroredUpdatedAt = validIsoTimestamp(settings.profileNameUpdatedAt) ? settings.profileNameUpdatedAt : EPOCH;
+  const profileUpdatedAt = validIsoTimestamp(state.currentUser.updatedAt) ? state.currentUser.updatedAt : EPOCH;
+
+  if (mirroredName && Date.parse(mirroredUpdatedAt) > Date.parse(profileUpdatedAt)) {
+    state.currentUser = {
+      ...state.currentUser,
+      displayName: mirroredName,
+      updatedAt: mirroredUpdatedAt,
+    };
+    return;
+  }
+
+  settings.teacherName = currentDisplayName();
+  settings.profileNameUpdatedAt = profileUpdatedAt;
+  settings.isPristine = false;
+  if (!validIsoTimestamp(settings.updatedAt) || Date.parse(profileUpdatedAt) > Date.parse(settings.updatedAt)) {
+    settings.updatedAt = profileUpdatedAt;
+  }
+}
+
+function validIsoTimestamp(value) {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value));
+}
+
 function currentMonth() {
   return state.database.months[state.monthKey];
 }
@@ -717,59 +857,61 @@ function render() {
       <main class="content">${main}</main>
       ${state.settingsOpen ? renderSettings() : ''}
       ${state.logoutDialogOpen ? renderLogoutDialog() : ''}
-      <footer class="app-footer"><span>${icon('signature', 14)} ${BRAND_CREATED_FOR}</span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private automatic synchronization</span></footer>
+      <footer class="app-footer"><span>${icon('signature', 14)} ${BRAND_DEVELOPER_CREDIT}</span><span>${icon('database', 14)} Offline-first</span><span>${icon('shield', 14)} Private account-based synchronization</span></footer>
     </div>`;
   scheduleAutoGrowTextareas();
 }
 
 function renderAuthScreen() {
   if (state.authStatus === 'checking') {
-    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo">${icon('money', 34)}</div><span class="spinner"></span><h1>${escapeHtml(BRAND.productName)}</h1><p>Checking your session and preparing synchronization...</p></div></main>`;
+    return `<main class="auth-shell"><div class="auth-loading"><div class="auth-logo">${icon('money', 34)}</div><span class="spinner"></span><h1>${escapeHtml(BRAND.appName)}</h1><p>Checking your session and preparing your workspace...</p></div></main>`;
   }
 
   if (state.authStatus === 'configuration-error') {
-    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo">${icon('money', 34)}</div><div><span>${escapeHtml(BRAND.appName.toUpperCase())}</span><h1>${escapeHtml(BRAND.productName)}</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>The sign-in page requires Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add the following two environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
+    return `<main class="auth-shell"><section class="auth-card configuration-card"><div class="auth-brand"><div class="auth-logo">${icon('money', 34)}</div><div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div></div><div class="auth-copy"><span class="eyebrow">CONFIGURATION REQUIRED</span><h2>Firebase is not connected</h2><p>Account access and synchronization require the Firebase configuration in your Vercel deployment.</p></div><div class="auth-alert error"><strong>Add these environment variables:</strong><code>VITE_FIREBASE_API_KEY</code><code>VITE_FIREBASE_PROJECT_ID</code></div><p class="auth-footnote">After saving the variables, redeploy the Production deployment.</p></section></main>`;
   }
 
   const isRegister = state.authMode === 'register';
   const isReset = state.authMode === 'reset';
-  const title = isRegister ? `Set up ${BRAND.ownerName}'s workspace` : isReset ? 'Recover account access' : `Welcome, ${BRAND.ownerName}`;
+  const title = isRegister ? 'Create your workspace' : isReset ? 'Recover account access' : 'Welcome back';
   const description = isRegister
-    ? 'Create one private account to access the same data on your phone, tablet, computer, and any other browser.'
+    ? 'Create your account once. Your name will personalize the dashboard, reports, PDF exports, and every device where you sign in.'
     : isReset
-      ? 'A recovery link will be sent to the email address registered for this workspace.'
-      : 'Sign in to access teaching-hour records, pay audits, and reports that synchronize automatically.';
+      ? 'A password recovery link will be sent to your registered email address.'
+      : 'Sign in to access your teaching hours, earnings, reports, and synchronized workspace.';
   const passwordType = state.passwordVisible ? 'text' : 'password';
-  const submitLabel = isRegister ? 'Create account & sync' : isReset ? 'Send reset link' : 'Sign in & sync';
+  const submitLabel = isRegister ? 'Create account' : isReset ? 'Send reset link' : 'Sign in';
 
   return `<main class="auth-shell">
-    <section class="auth-showcase"><div class="showcase-content"><div class="auth-brand inverse"><div class="auth-logo">${icon('money', 34)}</div><div><span>${escapeHtml(BRAND.appName.toUpperCase())}</span><h1>${escapeHtml(BRAND.productName)}</h1></div></div><div class="creator-badge">${icon('signature', 16)} <span>PERSONAL WORKSPACE</span></div><span class="showcase-eyebrow">CREATED EXCLUSIVELY FOR ${escapeHtml(BRAND.ownerName.toUpperCase())}</span><h2>Created by ${escapeHtml(BRAND.developerName)}.<br>Designed for ${escapeHtml(BRAND.ownerName)}.</h2><p>This private workspace was created by ${escapeHtml(BRAND.developerName)} exclusively for ${escapeHtml(BRAND.ownerName)} to track teaching hours, audit earnings, and keep every report organized across devices.</p><div class="showcase-features"><span>${icon('signature', 18)} A personal ${escapeHtml(BRAND.developerName)} × ${escapeHtml(BRAND.ownerName)} workspace</span><span>${icon('refresh', 18)} Every change synchronizes automatically</span><span>${icon('shield', 18)} Data stays safe when the connection is interrupted</span></div><div class="showcase-status-card"><div><span>WORKSPACE STATUS</span><strong>Private & connected</strong></div><div class="status-orb"><i></i> Auto sync</div></div></div></section>
-    <section class="auth-panel"><div class="auth-panel-inner"><div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.productName)}</strong><span>${escapeHtml(BRAND.appName)}</span></div></div><div class="mobile-creator-note">${icon('signature', 16)} ${escapeHtml(BRAND.ownerName)}'s private workspace, created by ${escapeHtml(BRAND.developerName)}.</div><span class="eyebrow">PRIVATE WORKSPACE ACCESS</span><h2>${title}</h2><p class="auth-description">${description}</p>
+    <section class="auth-showcase"><div class="showcase-content"><div class="auth-brand inverse"><div class="auth-logo">${icon('money', 34)}</div><div><span>TEACHING HOURS & PAY</span><h1>${escapeHtml(BRAND.appName)}</h1></div></div><div class="creator-badge">${icon('shield', 16)} <span>SECURE PERSONAL WORKSPACE</span></div><span class="showcase-eyebrow">ONE ACCOUNT · ALL YOUR DEVICES</span><h2>Your teaching records.<br>Your earnings. Always in sync.</h2><p>Track teaching hours, calculate pay automatically, keep monthly and annual records, and open the same private workspace from any browser or device.</p><div class="showcase-features"><span>${icon('user-plus', 18)} Your name personalizes every report</span><span>${icon('refresh', 18)} Changes synchronize automatically</span><span>${icon('shield', 18)} Every account has isolated private data</span></div><div class="showcase-status-card"><div><span>WORKSPACE</span><strong>Offline-first & cloud synced</strong></div><div class="status-orb"><i></i> Ready</div></div></div></section>
+    <section class="auth-panel"><div class="auth-panel-inner"><div class="mobile-auth-brand"><div class="auth-logo">${icon('money', 30)}</div><div><strong>${escapeHtml(BRAND.appName)}</strong><span>Teaching hours & pay</span></div></div><div class="mobile-creator-note">${icon('shield', 16)} Private data for each signed-in account.</div><span class="eyebrow">ACCOUNT ACCESS</span><h2>${title}</h2><p class="auth-description">${description}</p>
       ${state.authError ? `<div class="auth-alert error">${icon('warning', 18)}<span>${escapeHtml(state.authError)}</span></div>` : ''}
       ${state.authNotice ? `<div class="auth-alert success">${icon('check', 18)}<span>${escapeHtml(state.authNotice)}</span></div>` : ''}
       <form class="auth-form" data-auth-form="${isReset ? 'reset' : isRegister ? 'register' : 'login'}">
+        ${isRegister ? `<label>Your Name<input name="displayName" type="text" autocomplete="name" required minlength="2" maxlength="80" value="${escapeAttribute(state.authDisplayName)}" placeholder="Example: Ipul"></label><div class="field-help">This name appears in your dashboard, PDF reports, exports, and profile.</div>` : ''}
         <label>Email<input name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" value="${escapeAttribute(state.authEmail)}" placeholder="name@example.com"></label>
         ${isReset ? '' : `<label>Password<div class="password-field"><input name="password" type="${passwordType}" autocomplete="${isRegister ? 'new-password' : 'current-password'}" required minlength="6" maxlength="4096" placeholder="At least 6 characters"><button type="button" data-action="toggle-password" aria-label="${state.passwordVisible ? 'Hide' : 'Show'} password">${icon(state.passwordVisible ? 'eye-off' : 'eye', 18)}</button></div></label>`}
-        ${isRegister ? `<label>Confirm password<input name="confirmPassword" type="${passwordType}" autocomplete="new-password" required minlength="6" maxlength="4096" placeholder="Re-enter password"></label>` : ''}
+        ${isRegister ? `<label>Confirm Password<input name="confirmPassword" type="${passwordType}" autocomplete="new-password" required minlength="6" maxlength="4096" placeholder="Re-enter your password"></label>` : ''}
         <button class="button primary auth-submit" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? '<span class="spinner"></span> Processing...' : `${icon(isReset ? 'mail' : isRegister ? 'user-plus' : 'login', 18)} ${submitLabel}`}</button>
       </form>
       <div class="auth-links">
-        ${isReset ? `<button type="button" data-action="show-login">Back to sign in</button>` : isRegister ? `<span>Already have an account?</span><button type="button" data-action="show-login">Sign in</button>` : `<button type="button" data-action="show-reset">Forgot password?</button><span>Don't have an account?</span><button type="button" data-action="show-register">Create account</button>`}
+        ${isReset ? `<button type="button" data-action="show-login">Back to sign in</button>` : isRegister ? `<span>Already have an account?</span><button type="button" data-action="show-login">Sign in</button>` : `<button type="button" data-action="show-reset">Forgot password?</button><span>New here?</span><button type="button" data-action="show-register">Create account</button>`}
       </div>
-      <div class="auth-security-note">${icon('lock', 16)} Your session is saved in this browser so you do not need to sign in every time. Use Sign Out on shared or public devices.</div>
+      <div class="auth-security-note">${icon('lock', 16)} Your session stays signed in on this browser until you choose Sign Out. On shared devices, always use Save & Sign Out.</div>
     </div></section>
   </main>`;
 }
 
 function renderHeader() {
   const statusLabel = cloudStatusLabel();
+  const name = currentDisplayName();
   return `<header class="app-header">
-    <div class="brand-block"><div class="brand-logo">${icon('money', 26)}</div><div><h1>${escapeHtml(BRAND.productName)}</h1><p>${escapeHtml(BRAND.ownerName)}'s private workspace</p></div></div>
+    <div class="brand-block"><div class="brand-logo">${icon('money', 26)}</div><div><h1>${escapeHtml(BRAND.appName)}</h1><p>Welcome, ${escapeHtml(name)}</p></div></div>
     <nav class="main-nav ${state.mobileMenuOpen ? 'open' : ''}">
       <button data-action="monthly-view" class="${state.view === 'monthly' ? 'active' : ''}">${icon('calendar', 18)} Monthly</button>
       <button data-action="yearly-view" class="${state.view === 'yearly' ? 'active' : ''}">${icon('history', 18)} Annual Summary</button>
     </nav>
-    <div class="header-actions"><div id="cloud-indicator" class="cloud-indicator ${state.cloudStatus}"><span></span>${statusLabel}</div><button class="header-signout-button" data-action="sign-out" aria-label="Sign out safely">${icon('logout', 17)}<span>Sign Out</span></button><button class="icon-button" data-action="open-settings" aria-label="Open settings">${icon('settings', 20)}</button><button class="icon-button mobile-menu-button" data-action="toggle-mobile-menu" aria-label="Open menu">${icon('menu', 20)}</button></div>
+    <div class="header-actions"><div id="cloud-indicator" class="cloud-indicator ${state.cloudStatus}"><span></span>${statusLabel}</div><div class="header-user-chip" title="${escapeAttribute(state.currentUser?.email || '')}"><span>${escapeHtml(name.slice(0, 1).toUpperCase())}</span><strong>${escapeHtml(name)}</strong></div><button class="header-signout-button" data-action="sign-out" aria-label="Sign out safely">${icon('logout', 17)}<span>Sign Out</span></button><button class="icon-button" data-action="open-settings" aria-label="Open settings">${icon('settings', 20)}</button><button class="icon-button mobile-menu-button" data-action="toggle-mobile-menu" aria-label="Open menu">${icon('menu', 20)}</button></div>
   </header>`;
 }
 
@@ -828,11 +970,19 @@ function renderYearly() {
 }
 
 function renderSettings() {
+  const name = currentDisplayName();
+  const email = state.currentUser?.email || cloud.user?.email || '';
   return `<div class="drawer-backdrop" data-backdrop="true"><aside class="settings-drawer" aria-label="Settings">
-    <div class="drawer-header"><div><h2>Settings</h2><p>Profile, backup, and synchronization.</p></div><button class="icon-button" data-action="close-settings">${icon('close', 21)}</button></div>
+    <div class="drawer-header"><div><h2>Settings</h2><p>Profile, rates, backup, and synchronization.</p></div><button class="icon-button" data-action="close-settings">${icon('close', 21)}</button></div>
     <div class="drawer-content">
-      <section class="settings-section"><div class="section-heading">${icon('settings', 20)}<div><h3>Profile and rates</h3><p>The default rate is used when a new month is created.</p></div></div>
-        <label class="field-label">Teacher name<input data-setting="teacherName" value="${escapeAttribute(state.database.settings.teacherName)}" placeholder="Full name"></label>
+      <section class="settings-section"><div class="section-heading">${icon('user', 20)}<div><h3>Your profile</h3><p>Your name is used throughout the workspace and in professional reports.</p></div></div>
+        <form class="profile-form" data-profile-form="true">
+          <label class="field-label">Your name<input name="displayName" value="${escapeAttribute(name)}" placeholder="Full name" required minlength="2" maxlength="80" autocomplete="name"></label>
+          <label class="field-label">Email<input value="${escapeAttribute(email)}" readonly disabled></label>
+          <button class="button secondary" type="submit" ${state.busy ? 'disabled' : ''}>${icon('save', 17)} Save profile name</button>
+        </form>
+      </section>
+      <section class="settings-section"><div class="section-heading">${icon('money', 20)}<div><h3>Pay settings</h3><p>The default rate is used when a new month is created.</p></div></div>
         <label class="field-label">Default hourly rate (USD)<input data-setting="defaultHourlyRate" type="number" min="0" step="0.25" value="${state.database.settings.defaultHourlyRate || ''}"></label>
         <div class="notice-box subtle">Changing the default rate does not modify previous months. Update the current month's rate from the Monthly page.</div>
       </section>
@@ -848,7 +998,7 @@ function renderCloudSettings() {
   const email = cloud.user?.email || state.currentUser?.email || '-';
   const statusText = cloudStatusText();
   return `<section class="settings-section"><div class="section-heading">${icon('cloud', 20)}<div><h3>Account and synchronization</h3><p>Every browser signed in with the same account uses the same cloud data.</p></div></div>
-    <div class="account-summary"><div class="account-avatar">${escapeHtml((email[0] || 'A').toUpperCase())}</div><div><strong>${escapeHtml(email)}</strong><span>Private Firebase account</span></div></div>
+    <div class="account-summary"><div class="account-avatar">${escapeHtml(currentDisplayName().slice(0, 1).toUpperCase())}</div><div><strong>${escapeHtml(currentDisplayName())}</strong><span>${escapeHtml(email)} · Private account</span></div></div>
     <div class="sync-pill ${state.cloudStatus}">${statusText}</div>
     ${state.cloudStatus === 'error' ? `<div class="notice-box warning-box"><strong>Cloud synchronization is delayed.</strong> ${escapeHtml(state.cloudError || 'Your data remains safe on this device and will be retried when the connection returns.')}</div>` : ''}
     <div class="notice-box subtle">Changes are saved locally first, then uploaded automatically about 250 ms after you stop typing. Before signing out, the app saves, synchronizes, and verifies the latest cloud revision.</div>
@@ -1019,6 +1169,7 @@ function icon(name, size = 20) {
     logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    user: '<path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/>',
     'user-plus': '<path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
     signature: '<path d="M4 19c4-7 6-10 8-10 1.5 0 1.2 2.2.3 4.1-.8 1.8-.7 3.4.5 3.4 1.6 0 2.9-3.5 4.3-3.5 1.1 0 .8 2 .2 3.2-.4.9.1 1.4 1 1.1L21 17"/><path d="M4 22h16"/>',
     'cloud-upload': '<path d="M17.5 19H7a5 5 0 1 1 1.2-9.8A7 7 0 0 1 21 12.5 4.5 4.5 0 0 1 17.5 19Z"/><path d="M12 16V9M9 12l3-3 3 3"/>',

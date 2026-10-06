@@ -82,6 +82,26 @@ export class FirebaseRestClient {
     return normalizedEmail;
   }
 
+  async fetchProfile() {
+    const session = await this.connect();
+    const root = this.#userRoot(session.uid);
+    const document = await this.#firestore(`${root}/profile/account`, { allowNotFound: true });
+    if (!document) return null;
+    const decoded = decodeMap(document.fields || {});
+    return normalizeProfile(decoded, session.email || '');
+  }
+
+  async saveProfile(profile) {
+    const session = await this.connect();
+    const normalized = normalizeProfile(profile, session.email || '');
+    if (!normalized) throw new Error('Your profile information is incomplete.');
+    const root = this.#userRoot(session.uid);
+    await this.#commit([
+      createUpdateWrite(this.#documentName(`${root}/profile/account`), normalized),
+    ]);
+    return normalized;
+  }
+
   signOut() {
     try {
       localStorage.removeItem(SESSION_KEY);
@@ -350,6 +370,24 @@ function validateCredentials(email, password) {
   if (normalizedPassword.length < 6) throw new Error('The password must contain at least 6 characters.');
   if (normalizedPassword.length > 4096) throw new Error('The password is too long.');
   return { email: normalizedEmail, password: normalizedPassword };
+}
+
+function normalizeProfile(value, fallbackEmail = '') {
+  if (!value || typeof value !== 'object') return null;
+  const displayName = normalizeDisplayName(value.displayName);
+  const email = normalizeEmail(value.email || fallbackEmail);
+  const createdAt = validRevision(value.createdAt);
+  const updatedAt = validRevision(value.updatedAt);
+  if (!displayName || !isValidEmail(email)) return null;
+  return { displayName, email, createdAt, updatedAt };
+}
+
+export function normalizeDisplayName(value) {
+  return String(value || '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
 }
 
 function normalizeEmail(value) {

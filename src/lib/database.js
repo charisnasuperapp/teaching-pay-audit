@@ -28,6 +28,7 @@ export function createDatabase() {
     version: 2,
     settings: {
       teacherName: '',
+      profileNameUpdatedAt: EPOCH,
       defaultHourlyRate: 10,
       isPristine: true,
       updatedAt: EPOCH,
@@ -54,11 +55,13 @@ export function sanitizeDatabase(candidate) {
   const rawSettings = candidate.settings && typeof candidate.settings === 'object' ? candidate.settings : {};
   const defaultRate = Number(rawSettings.defaultHourlyRate);
   const teacherName = typeof rawSettings.teacherName === 'string' ? rawSettings.teacherName.slice(0, 100) : '';
+  const profileNameUpdatedAt = validTimestamp(rawSettings.profileNameUpdatedAt, EPOCH);
   const safeDefaultRate = Number.isFinite(defaultRate) ? Math.max(0, defaultRate) : 10;
   const database = {
     version: 2,
     settings: {
       teacherName,
+      profileNameUpdatedAt,
       defaultHourlyRate: safeDefaultRate,
       isPristine: typeof rawSettings.isPristine === 'boolean'
         ? rawSettings.isPristine

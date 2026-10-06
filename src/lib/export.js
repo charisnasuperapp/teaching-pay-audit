@@ -19,8 +19,12 @@ function csvCell(value) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-export function exportMonthCsv(month) {
+export function exportMonthCsv(month, displayName = 'Teacher') {
   const rows = [
+    [BRAND_TITLE],
+    ['Prepared for', displayName],
+    ['Reporting period', formatMonthKey(month.monthKey)],
+    [],
     ['Date', 'Class', 'Hours', 'Hourly Rate (USD)', 'Amount (USD)', 'Notes'],
     ...Object.values(month.entries).map((entry) => [
       entry.day,
@@ -37,8 +41,14 @@ export function exportMonthCsv(month) {
   download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-monthly-${month.monthKey}.csv`);
 }
 
-export function exportYearCsv(database, year) {
-  const rows = [['Month', 'Teaching Days', 'Total Hours', 'Average Hours/Day', 'Hourly Rate (USD)', 'Total Pay (USD)']];
+export function exportYearCsv(database, year, displayName = 'Teacher') {
+  const rows = [
+    [BRAND_TITLE],
+    ['Prepared for', displayName],
+    ['Reporting year', year],
+    [],
+    ['Month', 'Teaching Days', 'Total Hours', 'Average Hours/Day', 'Hourly Rate (USD)', 'Total Pay (USD)'],
+  ];
   let totalDays = 0;
   let totalHours = 0;
   let totalPay = 0;
@@ -62,9 +72,17 @@ export function exportYearCsv(database, year) {
   download(`\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\n')}`, 'text/csv;charset=utf-8', `${BRAND.slug}-annual-${year}.csv`);
 }
 
-export function exportBackup(database) {
+export function exportBackup(database, profile = {}) {
   download(
-    JSON.stringify({ application: BRAND_TITLE, exportedAt: new Date().toISOString(), data: database }, null, 2),
+    JSON.stringify({
+      application: BRAND_TITLE,
+      exportedAt: new Date().toISOString(),
+      profile: {
+        displayName: String(profile.displayName || ''),
+        email: String(profile.email || ''),
+      },
+      data: database,
+    }, null, 2),
     'application/json',
     `${BRAND.slug}-backup-${new Date().toISOString().slice(0, 10)}.json`,
   );

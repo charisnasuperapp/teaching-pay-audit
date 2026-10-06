@@ -1,4 +1,4 @@
-import { BRAND, BRAND_CREATED_EXCLUSIVELY, BRAND_TITLE } from '../brand.js';
+import { BRAND, BRAND_TITLE } from '../brand.js';
 import { calculatePay, formatCurrency, formatHours, summarizeMonth } from './calculations.js';
 import { formatMonthKey, getMonthKeysForYear } from './date.js';
 import { PdfDocument, PDF_PAGE, downloadPdf, wrapText } from './pdf-core.js';
@@ -43,8 +43,8 @@ export function exportMonthPdf(month, teacherName) {
   downloadPdf(bytes, `${BRAND.slug}-monthly-${month.monthKey}.pdf`);
 }
 
-export function exportYearPdf(database, year) {
-  const bytes = buildYearReportPdf(database, year);
+export function exportYearPdf(database, year, teacherName = 'Teacher') {
+  const bytes = buildYearReportPdf(database, year, teacherName);
   downloadPdf(bytes, `${BRAND.slug}-annual-${year}.pdf`);
 }
 
@@ -59,8 +59,8 @@ export function buildMonthReportPdf(month, teacherName, generatedAt = new Date()
   return document.toUint8Array();
 }
 
-export function buildYearReportPdf(database, year, generatedAt = new Date()) {
-  const model = createYearReportModel(database, year, generatedAt);
+export function buildYearReportPdf(database, year, teacherName = 'Teacher', generatedAt = new Date()) {
+  const model = createYearReportModel(database, year, teacherName, generatedAt);
   const document = new PdfDocument({
     ...PDF_PAGE.A4_LANDSCAPE,
     title: `Annual Teaching Pay Report - ${year}`,
@@ -87,7 +87,7 @@ export function createMonthReportModel(month, teacherName, generatedAt = new Dat
 
   return {
     type: 'monthly',
-    teacherName: String(teacherName || BRAND.ownerName),
+    teacherName: String(teacherName || 'Teacher'),
     periodLabel: formatMonthKey(month.monthKey),
     monthKey: month.monthKey,
     hourlyRate: month.hourlyRate,
@@ -97,7 +97,7 @@ export function createMonthReportModel(month, teacherName, generatedAt = new Dat
   };
 }
 
-export function createYearReportModel(database, year, generatedAt = new Date()) {
+export function createYearReportModel(database, year, teacherName = 'Teacher', generatedAt = new Date()) {
   const months = getMonthKeysForYear(year).map((monthKey, index) => {
     const month = database.months?.[monthKey];
     const summary = month ? summarizeMonth(month) : emptySummary(monthKey);
@@ -126,7 +126,7 @@ export function createYearReportModel(database, year, generatedAt = new Date()) 
   return {
     type: 'annual',
     year,
-    teacherName: String(database.settings?.teacherName || BRAND.ownerName),
+    teacherName: String(teacherName || database.settings?.teacherName || 'Teacher'),
     generatedLabel: formatGeneratedAt(generatedAt),
     months,
     totals,
@@ -245,7 +245,7 @@ function drawReportHeader(page, { margin, reportType, periodLabel, continuation 
 
   page.text(BRAND.appName.toUpperCase(), margin + 48, markY + 27, { size: 8, bold: true, color: COLORS.primary });
   page.text(BRAND.productName, margin + 48, markY + 11, { size: 16, bold: true, color: COLORS.ink });
-  page.text(BRAND_CREATED_EXCLUSIVELY, margin + 48, markY - 1, { size: 7.5, color: COLORS.muted });
+  page.text('Teaching hours and earnings record', margin + 48, markY - 1, { size: 7.5, color: COLORS.muted });
 
   page.text(reportType.toUpperCase(), page.width - margin, markY + 26, { size: 7.5, bold: true, color: COLORS.muted, align: 'right' });
   page.text(periodLabel, page.width - margin, markY + 8, { size: 16, bold: true, color: COLORS.primaryDark, align: 'right' });
@@ -397,7 +397,7 @@ function drawSignatureSection(page, teacherName, margin, topY) {
 
   page.text('Prepared by', margin + boxWidth / 2, topY, { size: 8, color: COLORS.muted, align: 'center' });
   page.line(margin + 12, lineY, margin + boxWidth - 12, lineY, { color: [0.55, 0.59, 0.66], lineWidth: 0.7 });
-  page.text(teacherName || BRAND.ownerName, margin + boxWidth / 2, lineY - 14, { size: 9, bold: true, color: COLORS.ink, align: 'center', maxWidth: boxWidth - 24 });
+  page.text(teacherName || 'Teacher', margin + boxWidth / 2, lineY - 14, { size: 9, bold: true, color: COLORS.ink, align: 'center', maxWidth: boxWidth - 24 });
   page.text('Teacher', margin + boxWidth / 2, lineY - 26, { size: 7.5, color: COLORS.muted, align: 'center' });
 
   const secondX = margin + boxWidth + gap;

@@ -168,3 +168,59 @@ test('sign out removes the stored session', async () => {
     globalThis.fetch = previousFetch;
   }
 });
+
+test('profile name is stored under the signed-in UID and loaded back for personalization', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  const calls = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (String(url).includes('accounts:signUp')) {
+      return jsonResponse(200, {
+        localId: 'profile-user',
+        email: 'ipul@example.com',
+        idToken: 'id-token',
+        refreshToken: 'refresh-token',
+        expiresIn: '3600',
+      });
+    }
+    if (String(url).endsWith('/documents:commit')) {
+      return jsonResponse(200, { commitTime: '2026-10-06T15:00:00.000Z', writeResults: [] });
+    }
+    if (String(url).endsWith('/documents/users/profile-user/profile/account')) {
+      return jsonResponse(200, {
+        fields: {
+          displayName: { stringValue: 'Ipul' },
+          email: { stringValue: 'ipul@example.com' },
+          createdAt: { stringValue: '2026-10-06T14:00:00.000Z' },
+          updatedAt: { stringValue: '2026-10-06T15:00:00.000Z' },
+        },
+      });
+    }
+    return jsonResponse(500, { error: { message: 'UNEXPECTED' } });
+  };
+
+  try {
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    await client.signUp('ipul@example.com', 'secret12');
+    const saved = await client.saveProfile({
+      displayName: '  Ipul  ',
+      email: 'ipul@example.com',
+      createdAt: '2026-10-06T14:00:00.000Z',
+      updatedAt: '2026-10-06T15:00:00.000Z',
+    });
+    const loaded = await client.fetchProfile();
+
+    assert.equal(saved.displayName, 'Ipul');
+    assert.equal(loaded.displayName, 'Ipul');
+    assert.equal(loaded.email, 'ipul@example.com');
+    const commitCall = calls.find((call) => call.url.endsWith('/documents:commit'));
+    const body = JSON.parse(commitCall.options.body);
+    assert.match(body.writes[0].update.name, /users\/profile-user\/profile\/account$/);
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});

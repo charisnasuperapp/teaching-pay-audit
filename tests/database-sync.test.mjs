@@ -39,12 +39,12 @@ test('an intentionally cleared month wins when it is newer', () => {
 test('cloud settings are not overwritten by default settings from a new device', () => {
   const local = createDatabase();
   const remote = createDatabase();
-  remote.settings.teacherName = 'Ayesha';
+  remote.settings.teacherName = 'Ipul';
   remote.settings.defaultHourlyRate = 12;
   remote.settings.isPristine = false;
   remote.settings.updatedAt = '2026-08-01T10:00:00.000Z';
 
   const merged = mergeDatabases(local, remote);
-  assert.equal(merged.settings.teacherName, 'Ayesha');
+  assert.equal(merged.settings.teacherName, 'Ipul');
   assert.equal(merged.settings.defaultHourlyRate, 12);
 });

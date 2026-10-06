@@ -1,13 +1,11 @@
 export const BRAND = Object.freeze({
-  appName: 'Ayesha Salary',
-  productName: 'Teaching Pay Audit',
-  ownerName: 'Ayesha',
+  appName: 'Teaching Pay Audit',
+  productName: 'Teaching Hours & Salary Records',
   developerName: 'Charisna',
-  slug: 'ayesha-salary',
+  slug: 'teaching-pay-audit',
   locale: 'en-US',
-  description: "Ayesha's private workspace for tracking teaching hours, auditing pay, and keeping reports synchronized automatically.",
+  description: 'A secure teaching-hours and salary workspace with automatic cross-device synchronization, professional reports, and offline-first reliability.',
 });
 
-export const BRAND_TITLE = `${BRAND.appName} - ${BRAND.productName}`;
-export const BRAND_CREATED_FOR = `Created by ${BRAND.developerName} for ${BRAND.ownerName}`;
-export const BRAND_CREATED_EXCLUSIVELY = `Created by ${BRAND.developerName} exclusively for ${BRAND.ownerName}`;
+export const BRAND_TITLE = BRAND.appName;
+export const BRAND_DEVELOPER_CREDIT = `Developed by ${BRAND.developerName}`;

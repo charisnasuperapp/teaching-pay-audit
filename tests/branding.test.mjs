@@ -4,12 +4,12 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { BRAND, BRAND_TITLE } from '../src/brand.js';
 
-test('Ayesha customer branding is centralized and complete', async () => {
-  assert.equal(BRAND.appName, 'Ayesha Salary');
-  assert.equal(BRAND.ownerName, 'Ayesha');
+test('multi-user product branding is centralized and customer-neutral', async () => {
+  assert.equal(BRAND.appName, 'Teaching Pay Audit');
+  assert.equal(BRAND.productName, 'Teaching Hours & Salary Records');
   assert.equal(BRAND.developerName, 'Charisna');
-  assert.equal(BRAND.slug, 'ayesha-salary');
-  assert.equal(BRAND_TITLE, 'Ayesha Salary - Teaching Pay Audit');
+  assert.equal(BRAND.slug, 'teaching-pay-audit');
+  assert.equal(BRAND_TITLE, 'Teaching Pay Audit');
 
   const sourceFiles = [
     'src/app.js',
@@ -21,6 +21,7 @@ test('Ayesha customer branding is centralized and complete', async () => {
   ];
   for (const relativePath of sourceFiles) {
     const contents = await readFile(resolve(import.meta.dirname, '..', relativePath), 'utf8');
-    assert.match(contents, /BRAND|__APP_|Ayesha|Teaching Pay Audit/, `${relativePath} must participate in centralized branding or customer identity`);
+    assert.match(contents, /BRAND|__APP_|Teaching Pay Audit/, `${relativePath} must use centralized product branding`);
+    assert.doesNotMatch(contents, /Ayesha Salary|Piola Salary/, `${relativePath} must not contain customer-specific product branding`);
   }
 });

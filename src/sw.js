@@ -1,4 +1,4 @@
-const CACHE = 'teaching-pay-audit-v1.9.0';
+const CACHE = 'teaching-pay-audit-v2.0.0';
 const SHELL = ['/', '/index.html', '/styles.css', '/app.js', '/brand.js', '/config.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/lib/date.js', '/lib/calculations.js', '/lib/database.js', '/lib/storage.js', '/lib/export.js', '/lib/pdf-report.js', '/lib/pdf-core.js', '/lib/firebase-rest.js', '/lib/logout-guard.js'];
 
 self.addEventListener('install', (event) => {
