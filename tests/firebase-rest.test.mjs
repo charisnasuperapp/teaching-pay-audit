@@ -1,0 +1,170 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { FirebaseRestClient } from '../src/lib/firebase-rest.js';
+
+class MemoryStorage {
+  constructor() { this.values = new Map(); }
+  getItem(key) { return this.values.has(key) ? this.values.get(key) : null; }
+  setItem(key, value) { this.values.set(key, String(value)); }
+  removeItem(key) { this.values.delete(key); }
+}
+
+function jsonResponse(status, value) {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+test('email/password sign-in stores a session and reads data by UID', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  const calls = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), method: options.method || 'GET', body: options.body || '' });
+    if (String(url).includes('accounts:signInWithPassword')) {
+      return jsonResponse(200, {
+        localId: 'user-123',
+        email: 'owner@example.com',
+        idToken: 'id-token',
+        refreshToken: 'refresh-token',
+        expiresIn: '3600',
+      });
+    }
+    if (String(url).includes('/salaryAudit/database')) {
+      return jsonResponse(404, { error: { status: 'NOT_FOUND', message: 'Not found' } });
+    }
+    return jsonResponse(200, { name: 'ok' });
+  };
+
+  try {
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    const session = await client.signIn('OWNER@EXAMPLE.COM', 'secret12');
+    const database = await client.fetchDatabase();
+
+    assert.equal(session.uid, 'user-123');
+    assert.equal(session.email, 'owner@example.com');
+    assert.equal(client.authenticated, true);
+    assert.equal(client.user.email, 'owner@example.com');
+    assert.equal(database.version, 2);
+    assert.match(calls[0].url, /accounts:signInWithPassword/);
+    assert.match(calls[1].url, /\/documents\/users\/user-123\/salaryAudit\/database$/);
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('month changes and metadata are committed atomically to the account documents', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  const calls = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), options });
+    if (String(url).includes('accounts:signInWithPassword')) {
+      return jsonResponse(200, {
+        localId: 'user-456',
+        email: 'owner@example.com',
+        idToken: 'id-token',
+        refreshToken: 'refresh-token',
+        expiresIn: '3600',
+      });
+    }
+    if (String(url).endsWith('/documents:commit')) {
+      return jsonResponse(200, { commitTime: '2026-08-02T15:00:00.000Z', writeResults: [] });
+    }
+    return jsonResponse(200, { name: 'ok' });
+  };
+
+  try {
+    const { createDatabase, createMonth } = await import('../src/lib/database.js');
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    await client.signIn('owner@example.com', 'secret12');
+    const database = createDatabase();
+    database.months['2026-08'] = createMonth('2026-08', 10);
+    database.months['2026-08'].entries[1].className = 'English A1';
+    database.months['2026-08'].entries[1].hours = 4;
+    database.months['2026-08'].isPristine = false;
+    database.months['2026-08'].updatedAt = '2026-08-02T15:00:00.000Z';
+
+    const revision = await client.saveChanges(database, ['2026-08'], { keepalive: true });
+    const commitCall = calls.find((call) => call.url.endsWith('/documents:commit'));
+    assert.ok(commitCall);
+    assert.equal(commitCall.options.keepalive, true);
+    const body = JSON.parse(commitCall.options.body);
+    assert.equal(body.writes.length, 2);
+    assert.match(body.writes[0].update.name, /users\/user-456\/salaryAuditMonths\/2026-08$/);
+    assert.match(body.writes[1].update.name, /users\/user-456\/salaryAudit\/database$/);
+    assert.equal(typeof revision, 'string');
+    assert.equal(Number.isFinite(Date.parse(revision)), true);
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('account creation and password reset use the correct Firebase endpoints', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  const calls = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url: String(url), body: options.body || '' });
+    if (String(url).includes('accounts:signUp')) {
+      return jsonResponse(200, {
+        localId: 'new-user',
+        email: 'new@example.com',
+        idToken: 'new-token',
+        refreshToken: 'new-refresh',
+        expiresIn: '3600',
+      });
+    }
+    if (String(url).includes('accounts:sendOobCode')) {
+      return jsonResponse(200, { email: 'new@example.com' });
+    }
+    return jsonResponse(500, { error: { message: 'UNEXPECTED' } });
+  };
+
+  try {
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    await client.signUp('new@example.com', 'secret12');
+    await client.sendPasswordReset('new@example.com');
+
+    assert.match(calls[0].url, /accounts:signUp/);
+    assert.match(calls[1].url, /accounts:sendOobCode/);
+    assert.equal(JSON.parse(calls[1].body).requestType, 'PASSWORD_RESET');
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('sign out removes the stored session', async () => {
+  const previousStorage = globalThis.localStorage;
+  const previousFetch = globalThis.fetch;
+  globalThis.localStorage = new MemoryStorage();
+  globalThis.fetch = async () => jsonResponse(200, {
+    localId: 'user-logout',
+    email: 'owner@example.com',
+    idToken: 'id-token',
+    refreshToken: 'refresh-token',
+    expiresIn: '3600',
+  });
+
+  try {
+    const client = new FirebaseRestClient({ apiKey: 'test-key', projectId: 'test-project' });
+    await client.signIn('owner@example.com', 'secret12');
+    assert.equal(client.authenticated, true);
+    client.signOut();
+    assert.equal(client.authenticated, false);
+    assert.equal(await client.restoreSession(), null);
+  } finally {
+    globalThis.localStorage = previousStorage;
+    globalThis.fetch = previousFetch;
+  }
+});
