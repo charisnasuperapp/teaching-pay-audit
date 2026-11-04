@@ -282,7 +282,7 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
 .auth-brand span { display: block; margin-bottom: 3px; font-size: 10px; font-weight: 850; letter-spacing: .16em; opacity: .72; }
 .auth-brand h1 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
 .showcase-eyebrow { display: block; margin-top: clamp(64px, 10vh, 116px); font-size: 11px; font-weight: 850; letter-spacing: .18em; opacity: .72; }
-.showcase-content > h2 { margin: 14px 0 18px; font-size: clamp(44px, 5vw, 72px); line-height: .98; letter-spacing: -.055em; }
+.showcase-content > h2 { margin: 14px 0 18px; font-size: clamp(44px, 5vw, 72px); line-height: 1.14; letter-spacing: -.02em; }
 .showcase-content > p { max-width: 560px; margin: 0; color: rgba(255,255,255,.82); font-size: clamp(15px, 1.45vw, 18px); line-height: 1.7; }
 .showcase-features { display: grid; gap: 13px; margin-top: 36px; }
 .showcase-features span { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,.92); font-size: 13px; font-weight: 700; }
@@ -439,7 +439,7 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-top: 18px;
+  margin-top: 28px;
   padding: 15px 16px;
   border: 1px solid rgba(255,255,255,.16);
   border-radius: 15px;
@@ -454,7 +454,7 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
   font-weight: 850;
   letter-spacing: .16em;
 }
-.showcase-status-card strong { display: block; margin-top: 4px; font-size: 14px; }
+.showcase-status-card strong { display: block; margin-top: 5px; font-size: 14px; line-height: 1.45; }
 .status-orb {
   display: flex;
   align-items: center;
@@ -718,10 +718,10 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
 .showcase-eyebrow { margin-top: 22px; }
 .showcase-content > h2 {
   max-width: 780px;
-  margin: 13px 0 20px;
+  margin: 13px 0 22px;
   font-size: clamp(46px, 4.7vw, 76px);
-  line-height: .97;
-  letter-spacing: -.055em;
+  line-height: 1.14;
+  letter-spacing: -.02em;
 }
 .showcase-content > p {
   max-width: 690px;
@@ -739,8 +739,8 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
   display: grid;
   grid-template-rows: auto auto 1fr;
   align-content: start;
-  gap: 8px;
-  padding: 16px;
+  gap: 11px;
+  padding: 18px;
   border: 1px solid rgba(255,255,255,.16);
   border-radius: 16px;
   background: rgba(255,255,255,.075);
@@ -758,8 +758,8 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
 }
 .showcase-features .showcase-feature-card strong {
   color: #fff;
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: 15px;
+  line-height: 1.4;
 }
 .showcase-features .showcase-feature-card span {
   min-height: 0;
@@ -769,22 +769,22 @@ tfoot td { position: sticky; bottom: 0; z-index: 2; padding: 14px 12px; color: #
   border-radius: 0;
   color: rgba(255,255,255,.72);
   background: transparent;
-  font-size: 11px;
-  font-weight: 560;
-  line-height: 1.55;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
   backdrop-filter: none;
 }
 .showcase-trust-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
-  margin-top: 19px;
-  color: rgba(255,255,255,.74);
-  font-size: 10.5px;
+  gap: 12px 20px;
+  margin-top: 24px;
+  color: rgba(255,255,255,.82);
+  font-size: 12px;
   font-weight: 700;
 }
 .showcase-trust-row span { display: inline-flex; align-items: center; gap: 6px; }
-.showcase-status-card { margin-top: 18px; }
+.showcase-status-card { margin-top: 28px; }
 .auth-panel {
   padding: clamp(30px, 5vw, 76px);
   background:
